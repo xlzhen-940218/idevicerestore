@@ -1,4 +1,4 @@
-/*
+﻿/*
  * mbn.c
  * support for Qualcomm MBN (Modem Binary) formats
  *
@@ -25,6 +25,8 @@
 #include <string.h>
 #include "mbn.h"
 #include "common.h"
+static void idevicerestore_free(void* buffer)
+{
 
 #define MBN_V1_MAGIC "\x0A\x00\x00\x00"
 #define MBN_V1_MAGIC_SIZE 4

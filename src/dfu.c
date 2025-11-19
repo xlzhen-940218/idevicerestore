@@ -1,4 +1,4 @@
-/*
+﻿/*
  * dfu.c
  * Functions for handling idevices in DFU mode
  *
@@ -33,7 +33,10 @@
 #include "recovery.h"
 #include "idevicerestore.h"
 #include "common.h"
+static void idevicerestore_free(void* buffer)
+{
 
+}
 static int dfu_progress_callback(irecv_client_t client, const irecv_event_t* event) {
 	if (event->type == IRECV_PROGRESS) {
 		set_progress('DFUP', (double)event->progress/100.0);
@@ -73,7 +76,7 @@ void dfu_client_free(struct idevicerestore_client_t* client)
 				irecv_close(client->dfu->client);
 				client->dfu->client = NULL;
 			}
-			free(client->dfu);
+			idevicerestore_free(client->dfu);
 		}
 		client->dfu = NULL;
 	}
@@ -161,7 +164,7 @@ int dfu_send_component(struct idevicerestore_client_t* client, plist_t build_ide
 			free(path);
 			return -1;
 		}
-		free(path);
+		idevicerestore_free(path);
 		path = NULL;
 	}
 
@@ -173,7 +176,7 @@ int dfu_send_component(struct idevicerestore_client_t* client, plist_t build_ide
 		free(component_data);
 		return -1;
 	}
-	free(component_data);
+	idevicerestore_free(component_data);
 	component_data = NULL;
 
 	if (!client->image4supported && client->build_major > 8 && !(client->flags & FLAG_CUSTOM) && !strcmp(component, "iBEC")) {
@@ -192,7 +195,7 @@ int dfu_send_component(struct idevicerestore_client_t* client, plist_t build_ide
 		memcpy(newdata, ticket, tsize);
 		memset(newdata + tsize, '\xFF', fillsize - tsize);
 		memcpy(newdata + fillsize, data, size);
-		free(data);
+		idevicerestore_free(data);
 		data = newdata;
 		size += fillsize;
 	}
@@ -208,7 +211,7 @@ int dfu_send_component(struct idevicerestore_client_t* client, plist_t build_ide
 		return -1;
 	}
 
-	free(data);
+	idevicerestore_free(data);
 	return 0;
 }
 
@@ -434,9 +437,9 @@ int dfu_send_iboot_stage1_components(struct idevicerestore_client_t* client, pli
 				err++;
 			}
 		}
-		free(key);
+		idevicerestore_free(key);
 	}
-	free(iter);
+	idevicerestore_free(iter);
 
 	return (err) ? -1 : 0;
 }
@@ -503,12 +506,12 @@ int dfu_enter_recovery(struct idevicerestore_client_t* client, plist_t build_ide
 		if (!client->nonce || (nonce_size != client->nonce_size) || (memcmp(nonce, client->nonce, nonce_size) != 0)) {
 			nonce_changed = 1;
 			if (client->nonce) {
-				free(client->nonce);
+				idevicerestore_free(client->nonce);
 			}
 			client->nonce = nonce;
 			client->nonce_size = nonce_size;
 		} else {
-			free(nonce);
+			idevicerestore_free(nonce);
 		}
 
 		logger(LL_INFO, "Nonce: ");

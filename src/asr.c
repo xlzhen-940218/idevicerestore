@@ -1,4 +1,4 @@
-/*
+﻿/*
  * asr.c
  * Functions for handling asr connections
  *
@@ -46,7 +46,10 @@
 #define ASR_PAYLOAD_PACKET_SIZE 1450
 #define ASR_PAYLOAD_CHUNK_SIZE 131072
 #define ASR_CHECKSUM_CHUNK_SIZE 131072
+static void idevicerestore_free(void* buffer)
+{
 
+}
 int asr_open_with_timeout(idevice_t device, asr_client_t* asr, uint16_t port)
 {
 	int i = 0;
@@ -171,7 +174,7 @@ int asr_send(asr_client_t asr, plist_t data)
 	}
 
 	if (buffer)
-		free(buffer);
+		idevicerestore_free(buffer);
 	return 0;
 }
 
@@ -196,7 +199,7 @@ void asr_free(asr_client_t asr)
 			idevice_disconnect(asr->connection);
 			asr->connection = NULL;
 		}
-		free(asr);
+		idevicerestore_free(asr);
 		asr = NULL;
 	}
 }
@@ -350,7 +353,7 @@ int asr_handle_oob_data_request(asr_client_t asr, plist_t packet, ipsw_file_hand
 		free(oob_data);
 		return -1;
 	}
-	free(oob_data);
+	idevicerestore_free(oob_data);
 	return 0;
 }
 
@@ -402,6 +405,6 @@ int asr_send_payload(asr_client_t asr, ipsw_file_handle_t file)
 		i -= size;
 	}
 
-	free(data);
+	idevicerestore_free(data);
 	return (i == 0) ? 0 : -1;
 }

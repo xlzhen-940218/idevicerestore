@@ -1,4 +1,4 @@
-/*
+﻿/*
  * restore.c
  * Functions for handling idevices in restore mode
  *
@@ -20,9 +20,12 @@
  * License along with this library; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
  */
+#ifndef HAVE_CONFIG_H
+#define HAVE_CONFIG_H
+#endif
 
 #ifdef HAVE_CONFIG_H
-#include <config.h>
+#include "config.h"
 #endif
 #include <limits.h>
 #include <stdio.h>
@@ -37,7 +40,7 @@
 #ifdef HAVE_REVERSE_PROXY
 #include <libimobiledevice/reverse_proxy.h>
 #else
-#warning Linking against libimobiledevice without reverse proxy support. Please update to a newer version of libimobiledevice, the legacy code used will be removed in a future version of idevicerestore.
+#warning Linking against libimobiledevice without reverse proxy support.Please update to a newer version of libimobiledevice, the legacy code used will be removed in a future version of idevicerestore.
 #endif
 #include <zip.h>
 #include <libirecovery.h>
@@ -118,14 +121,24 @@
 #define REQUESTING_EAN_DATA           74
 #define SEALING_SYSTEM_VOLUME         77
 #define UPDATING_APPLETCON            81
+#define PATH_MAX        4096 
+
+#if !defined(S_ISREG) && defined(S_IFMT) && defined(S_IFREG)
+#define S_ISREG(m) (((m) & S_IFMT) == S_IFREG)
+#endif
 
 static int restore_finished = 0;
 
 static int restore_device_connected = 0;
 
+static void idevicerestore_free(void* buffer)
+{
+
+}
+
 int restore_client_new(struct idevicerestore_client_t* client)
 {
-	struct restore_client_t* restore = (struct restore_client_t*) malloc(sizeof(struct restore_client_t));
+	struct restore_client_t* restore = (struct restore_client_t*)malloc(sizeof(struct restore_client_t));
 	if (restore == NULL) {
 		logger(LL_ERROR, "Out of memory\n");
 		return -1;
@@ -143,19 +156,19 @@ int restore_client_new(struct idevicerestore_client_t* client)
 void restore_client_free(struct idevicerestore_client_t* client)
 {
 	if (client && client->restore) {
-		if(client->restore->client) {
+		if (client->restore->client) {
 			restored_client_free(client->restore->client);
 			client->restore->client = NULL;
 		}
-		if(client->restore->device) {
+		if (client->restore->device) {
 			idevice_free(client->restore->device);
 			client->restore->device = NULL;
 		}
-		if(client->restore->bbtss) {
+		if (client->restore->bbtss) {
 			plist_free(client->restore->bbtss);
 			client->restore->bbtss = NULL;
 		}
-		free(client->restore);
+		idevicerestore_free(client->restore);
 		client->restore = NULL;
 	}
 }
@@ -163,7 +176,7 @@ void restore_client_free(struct idevicerestore_client_t* client)
 static int restore_idevice_new(struct idevicerestore_client_t* client, idevice_t* device)
 {
 	int num_devices = 0;
-	char **devices = NULL;
+	char** devices = NULL;
 	idevice_get_device_list(&devices, &num_devices);
 	if (num_devices == 0) {
 		return -1;
@@ -199,10 +212,10 @@ static int restore_idevice_new(struct idevicerestore_client_t* client, idevice_t
 			continue;
 		}
 		if (strcmp(type, "com.apple.mobile.restored") != 0) {
-			free(type);
+			idevicerestore_free(type);
 			continue;
 		}
-		free(type);
+		idevicerestore_free(type);
 
 		if (client->ecid != 0) {
 			plist_t node = NULL;
@@ -234,7 +247,7 @@ static int restore_idevice_new(struct idevicerestore_client_t* client, idevice_t
 			restored_client_free(restore);
 			restore = NULL;
 		}
-		client->udid = strdup(devices[j]);
+		client->udid = _strdup(devices[j]);
 		*device = dev;
 		break;
 	}
@@ -302,7 +315,7 @@ irecv_device_t restore_get_irecv_device(struct idevicerestore_client_t* client)
 
 	plist_get_string_val(node, &model);
 	irecv_devices_get_device_by_hardware_model(model, &irecv_device);
-	free(model);
+	idevicerestore_free(model);
 
 	return irecv_device;
 }
@@ -349,7 +362,7 @@ int restore_is_image4_supported(struct idevicerestore_client_t* client)
 
 int restore_reboot(struct idevicerestore_client_t* client)
 {
-	if(client->restore == NULL) {
+	if (client->restore == NULL) {
 		if (restore_open_with_timeout(client) < 0) {
 			logger(LL_ERROR, "Unable to open device in restore mode\n");
 			return -1;
@@ -387,7 +400,7 @@ static int restore_is_current_device(struct idevicerestore_client_t* client, con
 	idevice_error_t device_error;
 	restored_client_t restored = NULL;
 	restored_error_t restore_error;
-	char *type = NULL;
+	char* type = NULL;
 	uint64_t version = 0;
 
 	device_error = idevice_new(&device, udid);
@@ -441,7 +454,7 @@ static int restore_is_current_device(struct idevicerestore_client_t* client, con
 
 int restore_open_with_timeout(struct idevicerestore_client_t* client)
 {
-	char *type = NULL;
+	char* type = NULL;
 	uint64_t version = 0;
 	idevice_t device = NULL;
 	restored_client_t restored = NULL;
@@ -637,9 +650,9 @@ const char* restore_progress_string(unsigned int operation)
 	}
 }
 
-struct restored_service_client {
-
-};
+//struct restored_service_client {
+//
+//};
 
 #define SERVICE_TYPE_RESTORED 1
 #define SERVICE_TYPE_PLIST 2
@@ -649,7 +662,7 @@ typedef struct restore_service_client {
 	int type;
 } *restore_service_client_t;
 
-static void* _restore_get_service_client_for_data_request(struct idevicerestore_client_t *client, plist_t message)
+static void* _restore_get_service_client_for_data_request(struct idevicerestore_client_t* client, plist_t message)
 {
 	if (!client || !client->restore || !client->restore->client) return NULL;
 	restore_service_client_t service = (restore_service_client_t)malloc(sizeof(struct restore_service_client));
@@ -686,15 +699,15 @@ static int _restore_service_send(restore_service_client_t service, plist_t plist
 		return -1;
 	}
 	switch (service->type) {
-		case SERVICE_TYPE_RESTORED:
-			return restored_send((restored_client_t)service->client, plist);
-		case SERVICE_TYPE_PLIST:
-			if (fmt == PLIST_FORMAT_BINARY) {
-				return property_list_service_send_binary_plist((property_list_service_client_t)service->client, plist);
-			}
-			return property_list_service_send_xml_plist((property_list_service_client_t)service->client, plist);
-		default:
-			break;
+	case SERVICE_TYPE_RESTORED:
+		return restored_send((restored_client_t)service->client, plist);
+	case SERVICE_TYPE_PLIST:
+		if (fmt == PLIST_FORMAT_BINARY) {
+			return property_list_service_send_binary_plist((property_list_service_client_t)service->client, plist);
+		}
+		return property_list_service_send_xml_plist((property_list_service_client_t)service->client, plist);
+	default:
+		break;
 	}
 	return -1;
 }
@@ -727,15 +740,15 @@ static void _restore_service_free(restore_service_client_t service)
 		return;
 	}
 	switch (service->type) {
-		case SERVICE_TYPE_RESTORED:
-			break;
-		case SERVICE_TYPE_PLIST:
-			property_list_service_client_free((property_list_service_client_t)service->client);
-			break;
-		default:
-			break;
+	case SERVICE_TYPE_RESTORED:
+		break;
+	case SERVICE_TYPE_PLIST:
+		property_list_service_client_free((property_list_service_client_t)service->client);
+		break;
+	default:
+		break;
 	}
-	free(service);
+	idevicerestore_free(service);
 }
 
 static int lastop = 0;
@@ -871,7 +884,7 @@ int restore_handle_status_msg(struct idevicerestore_client_t* client, plist_t ms
 	node = plist_dict_get_item(msg, "AMRError");
 	if (node && plist_get_node_type(node) == PLIST_UINT) {
 		plist_get_uint_val(node, &value);
-		result = -value;
+		result = -(int)value;
 		if (result > 0) {
 			result = -result;
 		}
@@ -926,13 +939,13 @@ static int restore_handle_baseband_updater_output_data(struct idevicerestore_cli
 		logger(LL_ERROR, "snprintf failed?!\n");
 		return result;
 	}
-	char* updater_out_fn = malloc(fl+1);
+	char* updater_out_fn = malloc(fl + 1);
 	if (!updater_out_fn) {
 		idevice_disconnect(connection);
 		logger(LL_ERROR, "Could not allocate buffer for filename\n");
 		return result;
 	}
-	snprintf(updater_out_fn, fl+1, "updater_output-%s.cpio", client->udid);
+	snprintf(updater_out_fn, fl + 1, "updater_output-%s.cpio", client->udid);
 	FILE* f = fopen(updater_out_fn, "wb");
 	if (!f) {
 		logger(LL_ERROR, "Could not open %s for writing, will not write baseband updater output data.\n", updater_out_fn);
@@ -940,7 +953,7 @@ static int restore_handle_baseband_updater_output_data(struct idevicerestore_cli
 	const int bufsize = 65536;
 	char* buf = malloc(bufsize);
 	if (!buf) {
-		free(updater_out_fn);
+		idevicerestore_free(updater_out_fn);
 		idevice_disconnect(connection);
 		logger(LL_ERROR, "Could not allocate buffer\n");
 		return result;
@@ -955,8 +968,8 @@ static int restore_handle_baseband_updater_output_data(struct idevicerestore_cli
 		fclose(f);
 		logger(LL_INFO, "Wrote baseband updater output data to %s\n", updater_out_fn);
 	}
-	free(updater_out_fn);
-	free(buf);
+	idevicerestore_free(updater_out_fn);
+	idevicerestore_free(buf);
 	idevice_disconnect(connection);
 	result = 0;
 
@@ -1035,13 +1048,20 @@ int restore_send_filesystem(struct idevicerestore_client_t* client, plist_t mess
 		return -1;
 	}
 	if (client->filesystem) {
-		char* path = strdup(client->filesystem);
+		char* path = _strdup(client->filesystem);
 		const char* fsname_base = path_get_basename(path);
+#ifdef WIN32
+#include <windows.h>
+		char parent_dir[_MAX_DIR];
+		_splitpath(path, NULL, parent_dir, NULL, NULL);
+#elif
 		char* parent_dir = dirname(path);
+#endif // WIN32
 		ipsw_dummy = ipsw_open(parent_dir);
 		file = ipsw_file_open(ipsw_dummy, fsname_base);
-		free(path);
-	} else {
+		idevicerestore_free(path);
+	}
+	else {
 		file = ipsw_file_open(client->ipsw, fsname);
 	}
 	if (!file) {
@@ -1106,7 +1126,8 @@ int restore_send_recovery_os_root_ticket(struct idevicerestore_client_t* client,
 	if (client->root_ticket) {
 		dict = plist_new_dict();
 		plist_dict_set_item(dict, "RecoveryOSRootTicketData", plist_new_data((char*)client->root_ticket, client->root_ticket_len));
-	} else {
+	}
+	else {
 		unsigned char* data = NULL;
 		unsigned int len = 0;
 
@@ -1120,7 +1141,8 @@ int restore_send_recovery_os_root_ticket(struct idevicerestore_client_t* client,
 				logger(LL_ERROR, "Unable to get ApImg4Ticket from TSS\n");
 				return -1;
 			}
-		} else {
+		}
+		else {
 			if (!(client->flags & FLAG_CUSTOM) && (tss_response_get_ap_ticket(client->tss, &data, &len) < 0)) {
 				logger(LL_ERROR, "Unable to get ticket from TSS\n");
 				return -1;
@@ -1133,7 +1155,7 @@ int restore_send_recovery_os_root_ticket(struct idevicerestore_client_t* client,
 		} else {
 			logger(LL_NOTICE, "Not sending RootTicketData (no data present)\n");
 		}
-		free(data);
+		idevicerestore_free(data);
 	}
 
 	restore_service_client_t service = _restore_get_service_client_for_data_request(client, message);
@@ -1166,7 +1188,8 @@ int restore_send_root_ticket(struct idevicerestore_client_t* client, plist_t mes
 	if (client->root_ticket) {
 		dict = plist_new_dict();
 		plist_dict_set_item(dict, "RootTicketData", plist_new_data((char*)client->root_ticket, client->root_ticket_len));
-	} else {
+	}
+	else {
 		unsigned char* data = NULL;
 		unsigned int len = 0;
 
@@ -1180,7 +1203,8 @@ int restore_send_root_ticket(struct idevicerestore_client_t* client, plist_t mes
 				logger(LL_ERROR, "Unable to get ApImg4Ticket from TSS\n");
 				return -1;
 			}
-		} else {
+		}
+		else {
 			if (!(client->flags & FLAG_CUSTOM) && (tss_response_get_ap_ticket(client->tss, &data, &len) < 0)) {
 				logger(LL_ERROR, "Unable to get ticket from TSS\n");
 				return -1;
@@ -1193,7 +1217,7 @@ int restore_send_root_ticket(struct idevicerestore_client_t* client, plist_t mes
 		} else {
 			logger(LL_INFO, "Not sending RootTicketData (no data present)\n");
 		}
-		free(data);
+		idevicerestore_free(data);
 	}
 
 	restore_service_client_t service = _restore_get_service_client_for_data_request(client, message);
@@ -1236,13 +1260,13 @@ static size_t _curl_write_callback(char* data, size_t size, size_t nmemb, query_
 static size_t _curl_header_callback(char* buffer, size_t size, size_t nitems, void* userdata)
 {
 	plist_t header_dict = (plist_t)userdata;
-	size_t len = nitems*size;
+	size_t len = nitems * size;
 	char* key = NULL;
 	char* val = NULL;
 	size_t i = 0;
 	while (i < len) {
 		if (buffer[i] == ':') {
-			key = malloc(i+1);
+			key = malloc(i + 1);
 			strncpy(key, buffer, i);
 			key[i] = '\0';
 			i++;
@@ -1257,8 +1281,8 @@ static size_t _curl_header_callback(char* buffer, size_t size, size_t nitems, vo
 	if (key && val) {
 		plist_dict_set_item(header_dict, key, plist_new_string(val));
 	}
-	free(key);
-	free(val);
+	idevicerestore_free(key);
+	idevicerestore_free(val);
 	return len;
 }
 
@@ -1327,7 +1351,7 @@ int restore_send_url_asset(struct idevicerestore_client_t* client, plist_t messa
 	plist_dict_set_item(dict, "ResponseHeaders", response_headers);
 	plist_dict_set_item(dict, "ResponseStatus", plist_new_uint(http_response));
 
-	free(response);
+	idevicerestore_free(response);
 
 	restore_service_client_t service = _restore_get_service_client_for_data_request(client, message);
 	if (!service) {
@@ -1389,7 +1413,7 @@ int restore_send_streamed_image_decryption_key(struct idevicerestore_client_t* c
 	plist_dict_new_iter(headers, &iter);
 	plist_t node = NULL;
 	do {
-		char *key = NULL;
+		char* key = NULL;
 		plist_dict_next_item(headers, iter, &key, &node);
 		if (!node) break;
 		snprintf(header_tmp, sizeof(header_tmp), "%s: %s", key, plist_get_string_ptr(node, NULL));
@@ -1439,7 +1463,7 @@ int restore_send_streamed_image_decryption_key(struct idevicerestore_client_t* c
 	plist_dict_set_item(dict, "ResponseHeaders", response_headers);
 	plist_dict_set_item(dict, "ResponseStatus", plist_new_uint(http_response));
 
-	free(response);
+	idevicerestore_free(response);
 
 	restore_service_client_t service = _restore_get_service_client_for_data_request(client, message);
 	if (!service) {
@@ -1488,7 +1512,7 @@ int restore_send_component(struct idevicerestore_client_t* client, plist_t messa
 	void* component_data = NULL;
 	size_t component_size = 0;
 	int ret = extract_component(client->ipsw, path, &component_data, &component_size);
-	free(path);
+	idevicerestore_free(path);
 	path = NULL;
 	if (ret < 0) {
 		logger(LL_ERROR, "Unable to extract component %s\n", component);
@@ -1508,7 +1532,7 @@ int restore_send_component(struct idevicerestore_client_t* client, plist_t messa
 	char compkeyname[256];
 	snprintf(compkeyname, sizeof(compkeyname), "%sFile", component_name);
 	plist_dict_set_item(dict, compkeyname, blob);
-	free(data);
+	idevicerestore_free(data);
 
 	restore_service_client_t service = _restore_get_service_client_for_data_request(client, message);
 	if (!service) {
@@ -1597,7 +1621,7 @@ int restore_send_nor(struct idevicerestore_client_t* client, plist_t message)
 		char *filename = NULL;
 		while ((filename = strsep(&manifest_p, "\r\n")) != NULL) {
 			if (*filename == '\0') continue;
-			const char *compname = get_component_name(filename);
+			const char* compname = get_component_name(filename);
 			if (!compname) continue;
 			memset(firmware_filename, '\0', sizeof(firmware_filename));
 			snprintf(firmware_filename, sizeof(firmware_filename), "%s/%s", firmware_path, filename);
@@ -1612,7 +1636,7 @@ int restore_send_nor(struct idevicerestore_client_t* client, plist_t message)
 			plist_dict_new_iter(build_id_manifest, &iter);
 		}
 		if (iter) {
-			char *component = NULL;
+			char* component = NULL;
 			plist_t manifest_entry;
 			do {
 				component = NULL;
@@ -1646,9 +1670,9 @@ int restore_send_nor(struct idevicerestore_client_t* client, plist_t message)
 						}
 					}
 				}
-				free(component);
+				idevicerestore_free(component);
 			} while (manifest_entry);
-			free(iter);
+			idevicerestore_free(iter);
 		}
 	}
 
@@ -1661,7 +1685,7 @@ int restore_send_nor(struct idevicerestore_client_t* client, plist_t message)
 	void* component_data = NULL;
 	size_t component_size = 0;
 	int ret = extract_component(client->ipsw, llb_path, &component_data, &component_size);
-	free(llb_path);
+	idevicerestore_free(llb_path);
 	if (ret < 0) {
 		logger(LL_ERROR, "Unable to extract component: %s\n", component);
 		return -1;
@@ -1678,27 +1702,28 @@ int restore_send_nor(struct idevicerestore_client_t* client, plist_t message)
 
 	dict = plist_new_dict();
 	plist_dict_set_item(dict, "LlbImageData", plist_new_data((char*)llb_data, llb_size));
-	free(llb_data);
+	idevicerestore_free(llb_data);
 
 	if (flash_version_1) {
 		norimage = plist_new_dict();
-	} else {
+	}
+	else {
 		norimage = plist_new_array();
 	}
 
 	plist_dict_iter iter = NULL;
 	plist_dict_new_iter(firmware_files, &iter);
 	while (iter) {
-		char *comp = NULL;
+		char* comp = NULL;
 		plist_t pcomp = NULL;
 		plist_dict_next_item(firmware_files, iter, &comp, &pcomp);
 		if (!comp) {
 			break;
 		}
-		char *comppath = NULL;
+		char* comppath = NULL;
 		plist_get_string_val(pcomp, &comppath);
 		if (!comppath) {
-			free(comp);
+			idevicerestore_free(comp);
 			continue;
 		}
 
@@ -1706,8 +1731,8 @@ int restore_send_nor(struct idevicerestore_client_t* client, plist_t message)
 		if (!strcmp(component, "LLB") || !strcmp(component, "RestoreSEP")) {
 			// skip LLB, it's already passed in LlbImageData
 			// skip RestoreSEP, it's passed in RestoreSEPImageData
-			free(comp);
-			free(comppath);
+			idevicerestore_free(comp);
+			idevicerestore_free(comppath);
 			continue;
 		}
 
@@ -1715,9 +1740,9 @@ int restore_send_nor(struct idevicerestore_client_t* client, plist_t message)
 		component_size = 0;
 
 		if (extract_component(client->ipsw, comppath, &component_data, &component_size) < 0) {
-			free(iter);
-			free(comp);
-			free(comppath);
+			idevicerestore_free(iter);
+			idevicerestore_free(comp);
+			idevicerestore_free(comppath);
 			plist_free(firmware_files);
 			logger(LL_ERROR, "Unable to extract component: %s\n", component);
 			return -1;
@@ -1732,28 +1757,30 @@ int restore_send_nor(struct idevicerestore_client_t* client, plist_t message)
 			logger(LL_ERROR, "Unable to get personalized component: %s\n", component);
 			return -1;
 		}
-		free(component_data);
+		idevicerestore_free(component_data);
 		component_data = NULL;
 		component_size = 0;
 
 		if (flash_version_1) {
 			plist_dict_set_item(norimage, component, plist_new_data((char*)nor_data, nor_size));
-		} else {
+		}
+		else {
 			/* make sure iBoot is the first entry in the array */
 			if (!strncmp("iBoot", component, 5)) {
 				plist_array_insert_item(norimage, plist_new_data((char*)nor_data, nor_size), 0);
-			} else {
+			}
+			else {
 				plist_array_append_item(norimage, plist_new_data((char*)nor_data, nor_size));
 			}
 		}
 
-		free(comp);
-		free(comppath);
-		free(nor_data);
+		idevicerestore_free(comp);
+		idevicerestore_free(comppath);
+		idevicerestore_free(nor_data);
 		nor_data = NULL;
 		nor_size = 0;
 	}
-	free(iter);
+	idevicerestore_free(iter);
 	plist_free(firmware_files);
 	plist_dict_set_item(dict, "NorImageData", norimage);
 
@@ -1761,10 +1788,10 @@ int restore_send_nor(struct idevicerestore_client_t* client, plist_t message)
 	size_t personalized_size = 0;
 
 	if (build_identity_has_component(client->restore->build_identity, "RestoreSEP") &&
-	    build_identity_get_component_path(client->restore->build_identity, "RestoreSEP", &restore_sep_path) == 0) {
+		build_identity_get_component_path(client->restore->build_identity, "RestoreSEP", &restore_sep_path) == 0) {
 		component = "RestoreSEP";
 		ret = extract_component(client->ipsw, restore_sep_path, &component_data, &component_size);
-		free(restore_sep_path);
+		idevicerestore_free(restore_sep_path);
 		if (ret < 0) {
 			logger(LL_ERROR, "Unable to extract component: %s\n", component);
 			return -1;
@@ -1780,16 +1807,16 @@ int restore_send_nor(struct idevicerestore_client_t* client, plist_t message)
 		}
 
 		plist_dict_set_item(dict, "RestoreSEPImageData", plist_new_data((char*)personalized_data, personalized_size));
-		free(personalized_data);
+		idevicerestore_free(personalized_data);
 		personalized_data = NULL;
 		personalized_size = 0;
 	}
 
 	if (build_identity_has_component(client->restore->build_identity, "SEP") &&
-	    build_identity_get_component_path(client->restore->build_identity, "SEP", &sep_path) == 0) {
+		build_identity_get_component_path(client->restore->build_identity, "SEP", &sep_path) == 0) {
 		component = "SEP";
 		ret = extract_component(client->ipsw, sep_path, &component_data, &component_size);
-		free(sep_path);
+		idevicerestore_free(sep_path);
 		if (ret < 0) {
 			logger(LL_ERROR, "Unable to extract component: %s\n", component);
 			return -1;
@@ -1805,16 +1832,16 @@ int restore_send_nor(struct idevicerestore_client_t* client, plist_t message)
 		}
 
 		plist_dict_set_item(dict, "SEPImageData", plist_new_data((char*)personalized_data, personalized_size));
-		free(personalized_data);
+		idevicerestore_free(personalized_data);
 		personalized_data = NULL;
 		personalized_size = 0;
 	}
 
 	if (build_identity_has_component(client->restore->build_identity, "SepStage1") &&
-	    build_identity_get_component_path(client->restore->build_identity, "SepStage1", &sep_path) == 0) {
+		build_identity_get_component_path(client->restore->build_identity, "SepStage1", &sep_path) == 0) {
 		component = "SepStage1";
 		ret = extract_component(client->ipsw, sep_path, &component_data, &component_size);
-		free(sep_path);
+		idevicerestore_free(sep_path);
 		if (ret < 0) {
 			logger(LL_ERROR, "Unable to extract component: %s\n", component);
 			return -1;
@@ -1830,7 +1857,7 @@ int restore_send_nor(struct idevicerestore_client_t* client, plist_t message)
 		}
 
 		plist_dict_set_item(dict, "SEPPatchImageData", plist_new_data((char*)personalized_data, personalized_size));
-		free(personalized_data);
+		idevicerestore_free(personalized_data);
 		personalized_data = NULL;
 		personalized_size = 0;
 	}
@@ -1964,7 +1991,7 @@ static int restore_sign_bbfw(const char* bbfwtmp, plist_t bbtss, const unsigned 
 		if (key == NULL)
 			break;
 		if (node && (strcmp(key + (strlen(key) - 5), "-Blob") == 0) && (plist_get_node_type(node) == PLIST_DATA)) {
-			char *ptr = strchr(key, '-');
+			char* ptr = strchr(key, '-');
 			*ptr = '\0';
 			const char* signfn = restore_get_bbfw_fn_for_element(key, bb_chip_id);
 			if (!signfn) {
@@ -1994,7 +2021,7 @@ static int restore_sign_bbfw(const char* bbfwtmp, plist_t bbtss, const unsigned 
 				goto leave;
 			}
 
-			buffer = (unsigned char*) malloc(zstat.size + 1);
+			buffer = (unsigned char*)malloc(zstat.size + 1);
 			if (buffer == NULL) {
 				logger(LL_ERROR, "Out of memory\n");
 				goto leave;
@@ -2054,7 +2081,7 @@ static int restore_sign_bbfw(const char* bbfwtmp, plist_t bbtss, const unsigned 
 					goto leave;
 				}
 			}
-			free(buffer);
+			idevicerestore_free(buffer);
 			buffer = NULL;
 
 			zs = zip_source_buffer(za, fdata, fsize, 1);
@@ -2073,13 +2100,14 @@ static int restore_sign_bbfw(const char* bbfwtmp, plist_t bbtss, const unsigned 
 				if (strcmp(key, "RamPSI") == 0) {
 					signed_file_idxs[signed_file_count++] = zindex;
 				}
-			} else {
+			}
+			else {
 				signed_file_idxs[signed_file_count++] = zindex;
 			}
 		}
-		free(key);
+		idevicerestore_free(key);
 	}
-	free(iter);
+	idevicerestore_free(iter);
 
 	// remove everything but required files
 	int64_t i, numf = zip_get_num_entries(za, 0);
@@ -2132,7 +2160,7 @@ static int restore_sign_bbfw(const char* bbfwtmp, plist_t bbtss, const unsigned 
 				goto leave;
 			}
 
-			buffer = (unsigned char*) malloc(zstat.size + 1);
+			buffer = (unsigned char*)malloc(zstat.size + 1);
 			if (buffer == NULL) {
 				logger(LL_ERROR, "Out of memory\n");
 				goto leave;
@@ -2148,7 +2176,7 @@ static int restore_sign_bbfw(const char* bbfwtmp, plist_t bbtss, const unsigned 
 			zfile = NULL;
 
 			fls = fls_parse(buffer, zstat.size);
-			free(buffer);
+			idevicerestore_free(buffer);
 			buffer = NULL;
 			if (!fls) {
 				logger(LL_ERROR, "could not parse fls file\n");
@@ -2188,7 +2216,8 @@ static int restore_sign_bbfw(const char* bbfwtmp, plist_t bbtss, const unsigned 
 				logger(LL_ERROR, "could not update archive with ticketed ebl.fls\n");
 				goto leave;
 			}
-		} else {
+		}
+		else {
 			// add BBTicket as bbticket.der
 			blob_size = 0;
 			blob = (const unsigned char*)plist_get_data_ptr(bbticket, &blob_size);
@@ -2214,7 +2243,8 @@ static int restore_sign_bbfw(const char* bbfwtmp, plist_t bbtss, const unsigned 
 	if (zip_close(za) == -1) {
 		logger(LL_ERROR, "could not close and write modified archive: %s\n", zip_strerror(za));
 		res = -1;
-	} else {
+	}
+	else {
 		res = 0;
 	}
 	za = NULL;
@@ -2232,7 +2262,7 @@ leave:
 		zip_close(za);
 	}
 	fls_free(fls);
-	free(buffer);
+	idevicerestore_free(buffer);
 
 	return res;
 }
@@ -2380,7 +2410,7 @@ static int restore_send_baseband_data(struct idevicerestore_client_t* client, pl
 	// send file
 	dict = plist_new_dict();
 	plist_dict_set_item(dict, "BasebandData", plist_new_data(buffer, sz));
-	free(buffer);
+	idevicerestore_free(buffer);
 	buffer = NULL;
 
 	restore_service_client_t service = _restore_get_service_client_for_data_request(client, message);
@@ -2402,7 +2432,7 @@ static int restore_send_baseband_data(struct idevicerestore_client_t* client, pl
 
 leave:
 	plist_free(dict);
-	free(buffer);
+	idevicerestore_free(buffer);
 	if (bbfwtmp) {
 		if (client->flags & FLAG_KEEP_PERS) {
 			const char* bbfwname = path_get_basename(bbfwtmp);
@@ -2450,7 +2480,7 @@ int restore_send_fdr_trust_data(struct idevicerestore_client_t* client, plist_t 
 	return 0;
 }
 
-static int restore_send_image_data(struct idevicerestore_client_t *client, plist_t message, const char *image_list_k, const char *image_type_k, const char *image_data_k)
+static int restore_send_image_data(struct idevicerestore_client_t* client, plist_t message, const char* image_list_k, const char* image_type_k, const char* image_data_k)
 {
 	restored_error_t restore_error;
 	plist_t arguments;
@@ -2460,7 +2490,7 @@ static int restore_send_image_data(struct idevicerestore_client_t *client, plist
 	plist_t data_dict = NULL;
 	plist_t build_id_manifest;
 	plist_dict_iter iter = NULL;
-	char *image_name = NULL;
+	char* image_name = NULL;
 	int want_image_list = 0;
 
 	if (!client || !client->restore || !client->restore->build_identity) {
@@ -2491,7 +2521,8 @@ static int restore_send_image_data(struct idevicerestore_client_t *client, plist
 
 	if (want_image_list) {
 		matched_images = plist_new_array();
-	} else {
+	}
+	else {
 		data_dict = plist_new_dict();
 	}
 
@@ -2500,7 +2531,7 @@ static int restore_send_image_data(struct idevicerestore_client_t *client, plist
 		plist_dict_new_iter(build_id_manifest, &iter);
 	}
 	if (iter) {
-		char *component;
+		char* component;
 		plist_t manifest_entry;
 		do {
 			component = NULL;
@@ -2531,7 +2562,7 @@ static int restore_send_image_data(struct idevicerestore_client_t *client, plist
 						if (path) {
 							ret = extract_component(client->ipsw, path, &component_data, &component_size);
 						}
-						free(path);
+						idevicerestore_free(path);
 						path = NULL;
 						if (ret < 0) {
 							logger(LL_ERROR, "Unable to extract component: %s\n", component);
@@ -2545,13 +2576,13 @@ static int restore_send_image_data(struct idevicerestore_client_t *client, plist
 						}
 
 						plist_dict_set_item(data_dict, component, plist_new_data((const char*)data, size));
-						free(data);
+						idevicerestore_free(data);
 					}
 				}
-				free(component);
+				idevicerestore_free(component);
 			}
 		} while (manifest_entry);
-		free(iter);
+		idevicerestore_free(iter);
 	}
 
 	restore_service_client_t service = _restore_get_service_client_for_data_request(client, message);
@@ -2735,7 +2766,7 @@ static plist_t restore_get_se_firmware_data(struct idevicerestore_client_t* clie
 	}
 
 	plist_dict_set_item(response, "FirmwareData", plist_new_data((char*)component_data, component_size));
-	free(component_data);
+	idevicerestore_free(component_data);
 	component_data = NULL;
 	component_size = 0;
 
@@ -2822,7 +2853,7 @@ static plist_t restore_get_savage_firmware_data(struct idevicerestore_client_t* 
 	}
 
 	ret = extract_component(client->ipsw, comp_path, &component_data, &component_size);
-	free(comp_path);
+	idevicerestore_free(comp_path);
 	comp_path = NULL;
 	if (ret < 0) {
 		plist_free(response);
@@ -2830,10 +2861,10 @@ static plist_t restore_get_savage_firmware_data(struct idevicerestore_client_t* 
 		free(comp_name);
 		return NULL;
 	}
-	free(comp_name);
+	idevicerestore_free(comp_name);
 	comp_name = NULL;
 
-	component_data_tmp = realloc(component_data, (size_t)component_size+16);
+	component_data_tmp = realloc(component_data, (size_t)component_size + 16);
 	if (!component_data_tmp) {
 		free(component_data);
 		plist_free(response);
@@ -2846,7 +2877,7 @@ static plist_t restore_get_savage_firmware_data(struct idevicerestore_client_t* 
 	component_size += 16;
 
 	plist_dict_set_item(response, "FirmwareData", plist_new_data((char*)component_data, component_size));
-	free(component_data);
+	idevicerestore_free(component_data);
 	component_data = NULL;
 	component_size = 0;
 
@@ -2923,6 +2954,22 @@ static plist_t restore_get_yonkers_firmware_data(struct idevicerestore_client_t*
 		free(comp_name);
 		return response;
 	}
+	p_info = plist_access_path(arguments, 2, "DeviceGeneratedTags", "ResponseTags");
+	plist_t v17;
+	const char* v18;
+	const char* v19;
+	unsigned int v20;
+	if (plist_get_node_type(p_info) != 4
+		|| plist_array_get_size(p_info) != 1
+		|| (v17 = plist_array_get_item(p_info, 0), v18 = (const char*)plist_get_string_ptr(v17, 0), (v19 = v18) == 0)
+		|| (v20 = strlen(v18), v20 < 7)
+		|| strncmp(&v19[v20 - 7], ",Ticket", 7u))
+	{
+		if (build_identity_get_component_path(client->restore->build_identity, comp_name, &comp_path) < 0) {
+			error("ERROR: Unable to get path for '%s' component\n", comp_name);
+			idevicerestore_free(comp_name);
+			return NULL;
+		}
 
 	if (build_identity_get_component_path(client->restore->build_identity, comp_name, &comp_path) < 0) {
 		plist_free(response);
@@ -2990,7 +3037,8 @@ static plist_t restore_get_rose_firmware_data(struct idevicerestore_client_t* cl
 	if (client->image4supported) {
 		plist_dict_set_item(parameters, "ApSecurityMode", plist_new_bool(1));
 		plist_dict_set_item(parameters, "ApSupportsImg4", plist_new_bool(1));
-	} else {
+	}
+	else {
 		plist_dict_set_item(parameters, "ApSupportsImg4", plist_new_bool(0));
 	}
 
@@ -2998,7 +3046,8 @@ static plist_t restore_get_rose_firmware_data(struct idevicerestore_client_t* cl
 	if (device_generated_request) {
 		/* use DeviceGeneratedRequest if present */
 		plist_dict_merge(&request, device_generated_request);
-	} else {
+	}
+	else {
 		/* add Rap,* tags from info dictionary to parameters */
 		plist_dict_merge(&parameters, p_info);
 	}
@@ -3035,7 +3084,7 @@ static plist_t restore_get_rose_firmware_data(struct idevicerestore_client_t* cl
 		return NULL;
 	}
 	ret = extract_component(client->ipsw, comp_path, &component_data, &component_size);
-	free(comp_path);
+	idevicerestore_free(comp_path);
 	comp_path = NULL;
 	if (ret < 0) {
 		plist_free(response);
@@ -3048,7 +3097,7 @@ static plist_t restore_get_rose_firmware_data(struct idevicerestore_client_t* cl
 		logger(LL_ERROR, "Failed to parse '%s' component data.\n", comp_name);
 		return NULL;
 	}
-	free(component_data);
+	idevicerestore_free(component_data);
 	component_data = NULL;
 	component_size = 0;
 	if (ftag != 'rkos') {
@@ -3064,7 +3113,7 @@ static plist_t restore_get_rose_firmware_data(struct idevicerestore_client_t* cl
 			return NULL;
 		}
 		ret = extract_component(client->ipsw, comp_path, &component_data, &component_size);
-		free(comp_path);
+		idevicerestore_free(comp_path);
 		comp_path = NULL;
 		if (ret < 0) {
 			ftab_free(ftab);
@@ -3075,13 +3124,13 @@ static plist_t restore_get_rose_firmware_data(struct idevicerestore_client_t* cl
 
 		ftag = 0;
 		if (ftab_parse(component_data, component_size, &rftab, &ftag) != 0) {
-			free(component_data);
+			idevicerestore_free(component_data);
 			ftab_free(ftab);
 			plist_free(response);
 			logger(LL_ERROR, "Failed to parse '%s' component data.\n", comp_name);
 			return NULL;
 		}
-		free(component_data);
+		idevicerestore_free(component_data);
 		component_data = NULL;
 		component_size = 0;
 		if (ftag != 'rkos') {
@@ -3104,7 +3153,7 @@ static plist_t restore_get_rose_firmware_data(struct idevicerestore_client_t* cl
 	ftab_free(ftab);
 
 	plist_dict_set_item(response, "FirmwareData", plist_new_data((char*)component_data, component_size));
-	free(component_data);
+	idevicerestore_free(component_data);
 	component_data = NULL;
 	component_size = 0;
 
@@ -3183,7 +3232,7 @@ static plist_t restore_get_veridian_firmware_data(struct idevicerestore_client_t
 
 	/* now get actual component data */
 	ret = extract_component(client->ipsw, comp_path, &component_data, &component_size);
-	free(comp_path);
+	idevicerestore_free(comp_path);
 	comp_path = NULL;
 	if (ret < 0) {
 		plist_free(response);
@@ -3194,10 +3243,11 @@ static plist_t restore_get_veridian_firmware_data(struct idevicerestore_client_t
 	plist_t fw_map = NULL;
 	if (plist_is_binary((const char*)component_data, component_size)) {
 		plist_from_bin((const char*)component_data, component_size, &fw_map);
-	} else {
+	}
+	else {
 		plist_from_xml((const char*)component_data, component_size, &fw_map);
 	}
-	free(component_data);
+	idevicerestore_free(component_data);
 	component_data = NULL;
 	component_size = 0;
 
@@ -3217,13 +3267,13 @@ static plist_t restore_get_veridian_firmware_data(struct idevicerestore_client_t
 
 	plist_dict_set_item(fw_map, "fw_map_digest", plist_copy(fw_map_digest));
 
-	char *bin_plist = NULL;
+	char* bin_plist = NULL;
 	uint32_t bin_size = 0;
 	plist_to_bin(fw_map, &bin_plist, &bin_size);
 	plist_free(fw_map);
 
 	plist_dict_set_item(response, "FirmwareData", plist_new_data(bin_plist, bin_size));
-	free(bin_plist);
+	idevicerestore_free(bin_plist);
 
 	return response;
 }
@@ -3357,7 +3407,7 @@ static plist_t restore_get_tcon_firmware_data(struct idevicerestore_client_t* cl
 
 	/* now get actual component data */
 	ret = extract_component(client->ipsw, comp_path, &component_data, &component_size);
-	free(comp_path);
+	idevicerestore_free(comp_path);
 	comp_path = NULL;
 	if (ret < 0) {
 		logger(LL_ERROR, "Unable to extract '%s' component\n", comp_name);
@@ -3366,7 +3416,7 @@ static plist_t restore_get_tcon_firmware_data(struct idevicerestore_client_t* cl
 	}
 
 	plist_dict_set_item(response, "FirmwareData", plist_new_data((char*)component_data, component_size));
-	free(component_data);
+	idevicerestore_free(component_data);
 	component_data = NULL;
 	component_size = 0;
 
@@ -3416,7 +3466,8 @@ static plist_t restore_get_timer_firmware_data(struct idevicerestore_client_t* c
 	if (client->image4supported) {
 		plist_dict_set_item(parameters, "ApSecurityMode", plist_new_bool(1));
 		plist_dict_set_item(parameters, "ApSupportsImg4", plist_new_bool(1));
-	} else {
+	}
+	else {
 		plist_dict_set_item(parameters, "ApSupportsImg4", plist_new_bool(0));
 	}
 
@@ -3426,7 +3477,8 @@ static plist_t restore_get_timer_firmware_data(struct idevicerestore_client_t* c
 		logger(LL_ERROR, "Could not find InfoArray in info dictionary\n");
 		plist_free(parameters);
 		return NULL;
-	} else {
+	}
+	else {
 		plist_t info_dict = plist_array_get_item(info_array, 0);
 		plist_t hwid = plist_dict_get_item(info_dict, "HardwareID");
 		tag = (uint32_t)plist_dict_get_uint(info_dict, "TagNumber");
@@ -3465,7 +3517,8 @@ static plist_t restore_get_timer_firmware_data(struct idevicerestore_client_t* c
 		logger(LL_ERROR, "Could not find APInfo in info dictionary\n");
 		plist_free(parameters);
 		return NULL;
-	} else {
+	}
+	else {
 		plist_dict_merge(&parameters, ap_info);
 	}
 
@@ -3502,7 +3555,7 @@ static plist_t restore_get_timer_firmware_data(struct idevicerestore_client_t* c
 			return NULL;
 		}
 		ret = extract_component(client->ipsw, comp_path, &component_data, &component_size);
-		free(comp_path);
+		idevicerestore_free(comp_path);
 		comp_path = NULL;
 		if (ret < 0) {
 			logger(LL_ERROR, "Unable to extract '%s' component\n", comp_name);
@@ -3515,7 +3568,7 @@ static plist_t restore_get_timer_firmware_data(struct idevicerestore_client_t* c
 			logger(LL_ERROR, "Failed to parse '%s' component data.\n", comp_name);
 			return NULL;
 		}
-		free(component_data);
+		idevicerestore_free(component_data);
 		component_data = NULL;
 		component_size = 0;
 		if (ftag != 'rkos') {
@@ -3534,7 +3587,7 @@ static plist_t restore_get_timer_firmware_data(struct idevicerestore_client_t* c
 			return NULL;
 		}
 		ret = extract_component(client->ipsw, comp_path, &component_data, &component_size);
-		free(comp_path);
+		idevicerestore_free(comp_path);
 		comp_path = NULL;
 		if (ret < 0) {
 			ftab_free(ftab);
@@ -3545,13 +3598,13 @@ static plist_t restore_get_timer_firmware_data(struct idevicerestore_client_t* c
 
 		ftag = 0;
 		if (ftab_parse(component_data, component_size, &rftab, &ftag) != 0) {
-			free(component_data);
+			idevicerestore_free(component_data);
 			ftab_free(ftab);
 			plist_free(response);
 			logger(LL_ERROR, "Failed to parse '%s' component data.\n", comp_name);
 			return NULL;
 		}
-		free(component_data);
+		idevicerestore_free(component_data);
 		component_data = NULL;
 		component_size = 0;
 		if (ftag != 'rkos') {
@@ -3574,7 +3627,7 @@ static plist_t restore_get_timer_firmware_data(struct idevicerestore_client_t* c
 	ftab_free(ftab);
 
 	plist_dict_set_item(response, "FirmwareData", plist_new_data((char*)component_data, component_size));
-	free(component_data);
+	idevicerestore_free(component_data);
 	component_data = NULL;
 	component_size = 0;
 
@@ -3712,10 +3765,10 @@ static int restore_send_firmware_updater_data(struct idevicerestore_client_t* cl
 	plist_t arguments;
 	plist_t p_type, p_updater_name, p_loop_count, p_info;
 	plist_t loop_count_dict = NULL;
-	char *s_type = NULL;
+	char* s_type = NULL;
 	plist_t dict = NULL;
 	plist_t fwdict = NULL;
-	char *s_updater_name = NULL;
+	char* s_updater_name = NULL;
 	int restore_error;
 
 	if (!client || !client->restore || !client->restore->build_identity) {
@@ -3757,7 +3810,7 @@ static int restore_send_firmware_updater_data(struct idevicerestore_client_t* cl
 		logger(LL_ERROR, "%s: MessageArgType has unexpected value '%s'\n", __func__, s_type);
 		goto error_out;
 	}
-	free(s_type);
+	idevicerestore_free(s_type);
 	s_type = NULL;
 
 	p_info = plist_dict_get_item(arguments, "MessageArgInfo");
@@ -3792,43 +3845,50 @@ static int restore_send_firmware_updater_data(struct idevicerestore_client_t* cl
 			logger(LL_ERROR, "%s: Couldn't get %s firmware data\n", __func__, fwtype);
 			goto error_out;
 		}
-	} else if (strcmp(s_updater_name, "Rose") == 0) {
+	}
+	else if (strcmp(s_updater_name, "Rose") == 0) {
 		fwdict = restore_get_rose_firmware_data(client, p_info, arguments);
 		if (fwdict == NULL) {
 			logger(LL_ERROR, "%s: Couldn't get Rose firmware data\n", __func__);
 			goto error_out;
 		}
-	} else if (strcmp(s_updater_name, "T200") == 0) {
+	}
+	else if (strcmp(s_updater_name, "T200") == 0) {
 		fwdict = restore_get_veridian_firmware_data(client, p_info, arguments);
 		if (fwdict == NULL) {
 			logger(LL_ERROR, "%s: Couldn't get Veridian firmware data\n", __func__);
 			goto error_out;
 		}
-	} else if (strcmp(s_updater_name, "AppleTCON") == 0) {
+	}
+	else if (strcmp(s_updater_name, "AppleTCON") == 0) {
 		fwdict = restore_get_tcon_firmware_data(client, p_info, arguments);
 		if (fwdict == NULL) {
 			logger(LL_ERROR, "%s: Couldn't get AppleTCON firmware data\n", __func__);
 			goto error_out;
 		}
-	} else if (strcmp(s_updater_name, "PS190") == 0) {
+	}
+	else if (strcmp(s_updater_name, "PS190") == 0) {
 		fwdict = restore_get_generic_firmware_data(client, p_info, arguments);
 		if (fwdict == NULL) {
 			logger(LL_ERROR, "%s: Couldn't get PCON1 firmware data\n", __func__);
 			goto error_out;
 		}
-	} else if (strcmp(s_updater_name, "AppleTypeCRetimer") == 0) {
+	}
+	else if (strcmp(s_updater_name, "AppleTypeCRetimer") == 0) {
 		fwdict = restore_get_timer_firmware_data(client, p_info, arguments);
 		if (fwdict == NULL) {
 			logger(LL_ERROR, "%s: Couldn't get AppleTypeCRetimer firmware data\n", __func__);
 			goto error_out;
 		}
-	} else if ((strcmp(s_updater_name, "Cryptex1") == 0) || (strcmp(s_updater_name, "Cryptex1LocalPolicy") == 0)) {
+	}
+	else if ((strcmp(s_updater_name, "Cryptex1") == 0) || (strcmp(s_updater_name, "Cryptex1LocalPolicy") == 0)) {
 		fwdict = restore_get_cryptex1_firmware_data(client, p_info, arguments);
 		if (fwdict == NULL) {
 			logger(LL_ERROR, "%s: Couldn't get %s firmware data\n", __func__, s_updater_name);
 			goto error_out;
 		}
-	} else if (strcmp(s_updater_name, "Ace3") == 0) {
+	}
+	else if (strcmp(s_updater_name, "Ace3") == 0) {
 		fwdict = restore_get_generic_firmware_data(client, p_info, arguments);
 		if (fwdict == NULL) {
 			logger(LL_ERROR, "%s: Couldn't get %s firmware data\n", __func__, s_updater_name);
@@ -3854,7 +3914,7 @@ static int restore_send_firmware_updater_data(struct idevicerestore_client_t* cl
 			goto error_out;
 		}
 	}
-	free(s_updater_name);
+	idevicerestore_free(s_updater_name);
 	s_updater_name = NULL;
 
 	restore_service_client_t service = _restore_get_service_client_for_data_request(client, message);
@@ -3880,8 +3940,8 @@ static int restore_send_firmware_updater_data(struct idevicerestore_client_t* cl
 	return 0;
 
 error_out:
-	free(s_type);
-	free(s_updater_name);
+	idevicerestore_free(s_type);
+	idevicerestore_free(s_updater_name);
 	plist_free(loop_count_dict);
 	return -1;
 }
@@ -3943,14 +4003,14 @@ struct cpio_odc_header {
 	char c_filesize[11];
 };
 
-static void octal(char *p, int width, int v)
+static void octal(char* p, int width, int v)
 {
 	char buf[32];
 	snprintf(buf, 32, "%0*o", width, v);
 	memcpy(p, buf, width);
 }
 
-static int cpio_send_file(idevice_connection_t connection, const char *name, struct stat *st, void *data)
+static int cpio_send_file(idevice_connection_t connection, const char* name, struct _stat64* st, void* data)
 {
 	struct cpio_odc_header hdr;
 
@@ -3972,13 +4032,13 @@ static int cpio_send_file(idevice_connection_t connection, const char *name, str
 	int name_len = strlen(name) + 1;
 	idevice_error_t device_error;
 
-	device_error = idevice_connection_send(connection, (void *)&hdr, sizeof(hdr), &bytes);
+	device_error = idevice_connection_send(connection, (void*)&hdr, sizeof(hdr), &bytes);
 	if (device_error != IDEVICE_E_SUCCESS || bytes != sizeof(hdr)) {
 		logger(LL_ERROR, "BootabilityBundle unable to send header. (%d) Sent %u of %lu bytes.\n", device_error, bytes, (long)sizeof(hdr));
 		return -1;
 	}
 
-	device_error = idevice_connection_send(connection, (void *)name, name_len, &bytes);
+	device_error = idevice_connection_send(connection, (void*)name, name_len, &bytes);
 	if (device_error != IDEVICE_E_SUCCESS || bytes != name_len) {
 		logger(LL_ERROR, "BootabilityBundle unable to send filename. (%d) Sent %u of %u bytes.\n", device_error, bytes, name_len);
 		return -1;
@@ -3995,17 +4055,19 @@ static int cpio_send_file(idevice_connection_t connection, const char *name, str
 	return 0;
 }
 
-static int restore_bootability_send_one(void *ctx, ipsw_archive_t ipsw, const char *name, struct stat *stat)
+static int restore_bootability_send_one(void* ctx, ipsw_archive_t ipsw, const char* name, struct _stat64* stat)
 {
 	idevice_connection_t connection = (idevice_connection_t)ctx;
-	const char *prefix = "BootabilityBundle/Restore/Bootability/";
-	const char *subpath;
+	const char* prefix = "BootabilityBundle/Restore/Bootability/";
+	const char* subpath;
 
 	if (!strcmp(name, "BootabilityBundle/Restore/Firmware/Bootability.dmg.trustcache")) {
 		subpath = "Bootability.trustcache";
-	} else if (strncmp(name, prefix, strlen(prefix))) {
+	}
+	else if (strncmp(name, prefix, strlen(prefix))) {
 		return 0;
-	} else {
+	}
+	else {
 		subpath = name + strlen(prefix);
 	}
 
@@ -4027,7 +4089,7 @@ static int restore_bootability_send_one(void *ctx, ipsw_archive_t ipsw, const ch
 
 	int ret = cpio_send_file(connection, subpath, stat, buf);
 
-	free(buf);
+	idevicerestore_free(buf);
 	return ret;
 }
 
@@ -4073,17 +4135,17 @@ static int restore_send_bootability_bundle_data(struct idevicerestore_client_t* 
 		return ret;
 	}
 
-	struct stat st = {.st_nlink = 1};
+	struct _stat64 st = { .st_nlink = 1 };
 	cpio_send_file(connection, "TRAILER!!!", &st, NULL);
 
 	idevice_disconnect(connection);
 
-    return 0;
+	return 0;
 }
 
 plist_t restore_get_build_identity(struct idevicerestore_client_t* client, uint8_t is_recovery_os)
 {
-	const char *variant;
+	const char* variant;
 
 	if (is_recovery_os)
 		variant = RESTORE_VARIANT_MACOS_RECOVERY_OS;
@@ -4093,9 +4155,9 @@ plist_t restore_get_build_identity(struct idevicerestore_client_t* client, uint8
 		variant = RESTORE_VARIANT_UPGRADE_INSTALL;
 
 	plist_t build_identity = build_manifest_get_build_identity_for_model_with_variant(
-			client->build_manifest,
-			client->device->hardware_model,
-			variant, 0);
+		client->build_manifest,
+		client->device->hardware_model,
+		variant, 0);
 
 	plist_t unique_id_node = plist_dict_get_item(client->build_manifest, "UniqueBuildID");
 	if (unique_id_node) {
@@ -4130,7 +4192,7 @@ int extract_macos_variant(plist_t build_identity, char** output)
 	return 0;
 }
 
-static char* extract_global_manifest_path(plist_t build_identity, char *variant)
+static char* extract_global_manifest_path(plist_t build_identity, char* variant)
 {
 	plist_t build_info = plist_dict_get_item(build_identity, "Info");
 	if (!build_info) {
@@ -4143,17 +4205,18 @@ static char* extract_global_manifest_path(plist_t build_identity, char *variant)
 		logger(LL_ERROR, "build identity info does not contain a DeviceClass\n");
 		return NULL;
 	}
-	char *device_class = NULL;
+	char* device_class = NULL;
 	plist_get_string_val(device_class_node, &device_class);
 
-	char *macos_variant = NULL;
+	char* macos_variant = NULL;
 	int ret;
 	if (variant) {
 		macos_variant = variant;
-	} else {
+	}
+	else {
 		ret = extract_macos_variant(build_identity, &macos_variant);
 		if (ret != 0) {
-			free(device_class);
+			idevicerestore_free(device_class);
 			return NULL;
 		}
 	}
@@ -4163,8 +4226,8 @@ static char* extract_global_manifest_path(plist_t build_identity, char *variant)
 	char *ticket_path = malloc(psize);
 	snprintf(ticket_path, psize, "Firmware/Manifests/restore/%s/apticket.%s.im4m", macos_variant, device_class);
 
-	free(device_class);
-	free(macos_variant);
+	idevicerestore_free(device_class);
+	idevicerestore_free(macos_variant);
 
 	return ticket_path;
 }
@@ -4182,7 +4245,7 @@ int extract_global_manifest(struct idevicerestore_client_t* client, plist_t buil
 		logger(LL_ERROR, "failed to read global manifest\n");
 		return -1;
 	}
-	free(ticket_path);
+	idevicerestore_free(ticket_path);
 
 	return 0;
 }
@@ -4200,7 +4263,8 @@ static int _restore_send_file_data(struct _restore_send_file_data_ctx* rctx, con
 	if (data != NULL) {
 		// Send a chunk of file data
 		plist_dict_set_item(dict, "FileData", plist_new_data((char*)data, size));
-	} else {
+	}
+	else {
 		// Send FileDataDone to mark end of transfer
 		plist_dict_set_item(dict, "FileDataDone", plist_new_bool(1));
 	}
@@ -4248,7 +4312,7 @@ int restore_send_personalized_boot_object_v3(struct idevicerestore_client_t* cli
 		logger_dump_plist(LL_DEBUG, message, 1);
 	}
 
-	char *image_name = NULL;
+	char* image_name = NULL;
 	plist_t node = plist_access_path(message, 2, "Arguments", "ImageName");
 	if (!node || plist_get_node_type(node) != PLIST_STRING) {
 		logger(LL_DEBUG, "Failed to parse arguments from PersonalizedBootObjectV3 plist\n");
@@ -4272,19 +4336,22 @@ int restore_send_personalized_boot_object_v3(struct idevicerestore_client_t* cli
 		if (ret != 0) {
 			return -1;
 		}
-	} else if (strcmp(image_name, "__RestoreVersion__") == 0) {
+	}
+	else if (strcmp(image_name, "__RestoreVersion__") == 0) {
 		int ret = ipsw_extract_to_memory(client->ipsw, "RestoreVersion.plist", &data, &size);
 		if (ret != 0) {
 			logger(LL_ERROR, "failed to read global manifest\n");
 			return -1;
 		}
-	} else if (strcmp(image_name, "__SystemVersion__") == 0) {
+	}
+	else if (strcmp(image_name, "__SystemVersion__") == 0) {
 		int ret = ipsw_extract_to_memory(client->ipsw, "SystemVersion.plist", &data, &size);
 		if (ret != 0) {
 			logger(LL_ERROR, "failed to read global manifest\n");
 			return -1;
 		}
-	} else {
+	}
+	else {
 		// Get component path
 		if (client->tss) {
 			if (tss_response_get_path_by_entry(client->tss, component, &path) < 0) {
@@ -4307,7 +4374,7 @@ int restore_send_personalized_boot_object_v3(struct idevicerestore_client_t* cli
 		void *component_data = NULL;
 		size_t component_size = 0;
 		int ret = extract_component(client->ipsw, path, &component_data, &component_size);
-		free(path);
+		idevicerestore_free(path);
 		path = NULL;
 		if (ret < 0) {
 			logger(LL_ERROR, "Unable to extract component %s\n", component);
@@ -4354,7 +4421,7 @@ int restore_send_personalized_boot_object_v3(struct idevicerestore_client_t* cli
 		}
 		i -= blob_size;
 	}
-	free(data);
+	idevicerestore_free(data);
 
 	_restore_send_file_data(&rctx, NULL, 0, size-i, size);
 	finalize_progress(rctx.tag);
@@ -4372,7 +4439,7 @@ int restore_send_source_boot_object_v4(struct idevicerestore_client_t* client, p
 		logger_dump_plist(LL_DEBUG, message, 1);
 	}
 
-	char *image_name = NULL;
+	char* image_name = NULL;
 	plist_t node = plist_access_path(message, 2, "Arguments", "ImageName");
 	if (!node || plist_get_node_type(node) != PLIST_STRING) {
 		logger(LL_DEBUG, "Failed to parse arguments from SourceBootObjectV4 plist\n");
@@ -4384,7 +4451,7 @@ int restore_send_source_boot_object_v4(struct idevicerestore_client_t* client, p
 		return -1;
 	}
 
-	char *component = image_name;
+	char* component = image_name;
 	// Fork from restore_send_component
 	//
 	char *path = NULL;
@@ -4392,7 +4459,7 @@ int restore_send_source_boot_object_v4(struct idevicerestore_client_t* client, p
 	logger(LL_INFO, "About to send %s...\n", component);
 
 	if (strcmp(image_name, "__GlobalManifest__") == 0) {
-		char *variant = NULL;
+		char* variant = NULL;
 		plist_t node = plist_access_path(message, 2, "Arguments", "Variant");
 		if (!node || plist_get_node_type(node) != PLIST_STRING) {
 			logger(LL_DEBUG, "Failed to parse arguments from SourceBootObjectV4 plist\n");
@@ -4405,11 +4472,14 @@ int restore_send_source_boot_object_v4(struct idevicerestore_client_t* client, p
 		}
 
 		path = extract_global_manifest_path(client->restore->build_identity, variant);
-	} else if (strcmp(image_name, "__RestoreVersion__") == 0) {
-		path = strdup("RestoreVersion.plist");
-	} else if (strcmp(image_name, "__SystemVersion__") == 0) {
-		path = strdup("SystemVersion.plist");
-	} else {
+	}
+	else if (strcmp(image_name, "__RestoreVersion__") == 0) {
+		path = _strdup("RestoreVersion.plist");
+	}
+	else if (strcmp(image_name, "__SystemVersion__") == 0) {
+		path = _strdup("SystemVersion.plist");
+	}
+	else {
 		// Get component path
 		if (client->tss) {
 			if (tss_response_get_path_by_entry(client->tss, component, &path) < 0) {
@@ -4450,13 +4520,13 @@ int restore_send_source_boot_object_v4(struct idevicerestore_client_t* client, p
 	register_progress(rctx.tag, component);
 
 	if (ipsw_extract_send(client->ipsw, path, 8192, (ipsw_send_cb)_restore_send_file_data, &rctx) < 0) {
-		free(path);
+		idevicerestore_free(path);
 		_restore_service_free(service);
 		finalize_progress(rctx.tag);
 		logger(LL_ERROR, "Failed to send component %s\n", component);
 		return -1;
 	}
-	free(path);
+	idevicerestore_free(path);
 
 	_restore_service_free(service);
 	finalize_progress(rctx.tag);
@@ -4514,7 +4584,7 @@ int restore_send_restore_local_policy(struct idevicerestore_client_t* client, pl
 	}
 
 	plist_free(dict);
-	free(data);
+	idevicerestore_free(data);
 
 	return 0;
 }
@@ -4538,9 +4608,10 @@ int restore_send_buildidentity(struct idevicerestore_client_t* client, plist_t m
 	plist_dict_set_item(dict, "BuildIdentityDict", plist_copy(build_identity));
 
 	plist_t node = plist_access_path(message, 2, "Arguments", "Variant");
-	if(node) {
+	if (node) {
 		plist_dict_set_item(dict, "Variant", plist_copy(node));
-	} else {
+	}
+	else {
 		plist_dict_set_item(dict, "Variant", plist_new_string("Erase"));
 	}
 
@@ -4843,7 +4914,7 @@ logger(LL_DEBUG, "%s: type = %s\n", __func__, type);
 		}
 
 		// Send RecoveryOS RTD
-		else if(!strcmp(type, "RecoveryOSRootTicketData")) {
+		else if (!strcmp(type, "RecoveryOSRootTicketData")) {
 			if (restore_send_recovery_os_root_ticket(client, message) < 0) {
 				logger(LL_ERROR, "Unable to send RootTicket\n");
 				return -1;
@@ -5029,7 +5100,7 @@ static void* _restore_handle_async_data_request(void* args)
 	struct _restore_async_args* async_args = (struct _restore_async_args*)args;
 	struct idevicerestore_client_t* client = async_args->client;
 	plist_t message = async_args->message;
-	free(async_args);
+	idevicerestore_free(async_args);
 
 	int err = restore_handle_data_request_msg(client, message);
 	if (err < 0) {
@@ -5073,7 +5144,7 @@ static int restore_handle_restore_attestation(struct idevicerestore_client_t* cl
 	plist_t dict = plist_new_dict();
 	plist_dict_set_item(dict, "RestoreShouldAttest", plist_new_bool(0));
 	restored_error_t restore_error = restored_send(client->restore->client, dict);
-	plist_free(dict);	
+	plist_free(dict);
 	if (restore_error != RESTORE_E_SUCCESS) {
 		logger(LL_ERROR, "Unable to send RestoreShouldAttest (%d)\n", restore_error);
 		return -1;
@@ -5408,13 +5479,13 @@ int restore_device(struct idevicerestore_client_t* client, plist_t build_identit
 		plist_dict_set_item(opts, "AddSystemPartitionPadding", plist_new_bool(1));
 		plist_dict_set_item(opts, "AllowUntetheredRestore", plist_new_bool(0));
 		plist_dict_set_item(opts, "AuthInstallEnableSso", plist_new_bool(0));
-		char *macos_variant = NULL;
+		char* macos_variant = NULL;
 		int ret = extract_macos_variant(build_identity, &macos_variant);
 		if (ret == 0) {
 			plist_dict_set_item(opts, "AuthInstallRecoveryOSVariant", plist_new_string(macos_variant));
-			free(macos_variant);
+			idevicerestore_free(macos_variant);
 		}
-		plist_dict_set_item(opts, "AuthInstallRestoreBehavior", plist_new_string(client->flags & FLAG_ERASE ? "Erase": "Update"));
+		plist_dict_set_item(opts, "AuthInstallRestoreBehavior", plist_new_string(client->flags & FLAG_ERASE ? "Erase" : "Update"));
 		plist_dict_set_item(opts, "AutoBootDelay", plist_new_uint(0));
 		plist_dict_set_item(opts, "BasebandUpdaterOutputPath", plist_new_bool(1));
 		plist_dict_set_item(opts, "DisableUserAuthentication", plist_new_bool(1));
@@ -5441,7 +5512,8 @@ int restore_device(struct idevicerestore_client_t* client, plist_t build_identit
 		if (msp) {
 			plist_dict_set_item(opts, "SystemPartitionSize", plist_copy(msp));
 		}
-	} else {
+	}
+	else {
 		// FIXME: new on iOS 5 ?
 		plist_dict_set_item(opts, "BootImageType", plist_new_string("User"));
 		// FIXME: required?
@@ -5504,7 +5576,7 @@ int restore_device(struct idevicerestore_client_t* client, plist_t build_identit
 				plist_get_string_val(node, &sval);
 				logger(LL_DEBUG, "TZ0RequiredCapacity: %s\n", sval);
 				plist_dict_set_item(opts, "TZ0RequiredCapacity", plist_copy(node));
-				free(sval);
+				idevicerestore_free(sval);
 				sval = NULL;
 			}
 		}
@@ -5527,7 +5599,7 @@ int restore_device(struct idevicerestore_client_t* client, plist_t build_identit
 	char* guid = generate_guid();
 	if (guid) {
 		plist_dict_set_item(opts, "UUID", plist_new_string(guid));
-		free(guid);
+		idevicerestore_free(guid);
 	}
 	plist_dict_set_item(opts, "CreateFilesystemPartitions", plist_new_bool(1));
 	plist_dict_set_item(opts, "SystemImage", plist_new_bool(1));
@@ -5537,7 +5609,8 @@ int restore_device(struct idevicerestore_client_t* client, plist_t build_identit
 	plist_t spp = plist_access_path(build_identity, 2, "Info", "SystemPartitionPadding");
 	if (spp) {
 		spp = plist_copy(spp);
-	} else {
+	}
+	else {
 		spp = plist_new_dict();
 		plist_dict_set_item(spp, "1024", plist_new_uint(1280));
 		plist_dict_set_item(spp, "128", plist_new_uint(1280));
@@ -5731,7 +5804,7 @@ int restore_device(struct idevicerestore_client_t* client, plist_t build_identit
 			logger_dump_plist(LL_DEBUG, message, 1);
 		}
 
-		free(type);
+		idevicerestore_free(type);
 		plist_free(message);
 		message = NULL;
 	}

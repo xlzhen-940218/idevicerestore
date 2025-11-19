@@ -1,4 +1,4 @@
-/*
+﻿/*
  * fls.c
  * support for .fls file format (found in .bbfw files)
  *
@@ -27,7 +27,10 @@
 #ifndef offsetof
 #define offsetof(type, member)  __builtin_offsetof (type, member)
 #endif
+static void idevicerestore_free(void* buffer)
+{
 
+}
 static void fls_parse_elements(fls_file* fls)
 {
 	/* FIXME: the following code is not big endian safe */
@@ -40,7 +43,9 @@ static void fls_parse_elements(fls_file* fls)
 
 	fls_element* cur = NULL;
 	do {
-		void* p = fls->data + offset;
+		//TODO...
+		//void* p = fls->data + offset;
+		uint32_t* p = fls->data + offset;
 		uint32_t hdrsize = 0;
 		cur = (fls_element*)p;
 		if ((offset + cur->size) > fls->size) {
@@ -121,14 +126,14 @@ void fls_free(fls_file* fls)
 		if (fls->num_elements > 0) {
 			int i;
 			for (i = fls->num_elements-1; i >=0; i--) {
-				free(fls->elements[i]);
+				idevicerestore_free(fls->elements[i]);
 			}
-			free(fls->elements);
+			idevicerestore_free(fls->elements);
 		}
 		if (fls->data) {
-			free(fls->data);
+			idevicerestore_free(fls->data);
 		}
-		free(fls);
+		idevicerestore_free(fls);
 	}
 }
 
@@ -160,7 +165,9 @@ int fls_update_sig_blob(fls_file* fls, const void* sigdata, size_t siglen)
 
 	unsigned int i;
 	uint32_t offset = 0;
-	void* newdata = malloc(newsize);
+	//TODO... void*
+	uint32_t* newdata = malloc(newsize);
+	//void* newdata = malloc(newsize);
 	if (!newdata) {
 		logger(LL_ERROR, "%s: out of memory\n", __func__);
 		return -1;
@@ -231,7 +238,7 @@ int fls_update_sig_blob(fls_file* fls, const void* sigdata, size_t siglen)
 		offset += fls->elements[i]->size;
 	}
 	if (fls->data) {
-		free(fls->data);
+		idevicerestore_free(fls->data);
 	}
 	fls->data = newdata;
 	fls->size = newsize;
@@ -258,7 +265,8 @@ int fls_insert_ticket(fls_file* fls, const void* data, size_t size)
 	size_t newsize = fls->size + size + padding;
 	unsigned int i;
 	uint32_t offset = 0;
-	void* newdata = malloc(newsize);
+	//TODO... void*
+	uint32_t* newdata = malloc(newsize);
 	if (!newdata) {
 		logger(LL_ERROR, "%s: out of memory\n", __func__);
 		return -1;
@@ -328,7 +336,7 @@ int fls_insert_ticket(fls_file* fls, const void* data, size_t size)
 		offset += fls->elements[i]->size;
 	}
 	if (fls->data) {
-		free(fls->data);
+		idevicerestore_free(fls->data);
 	}
 	fls->data = newdata;
 	fls->size = newsize;

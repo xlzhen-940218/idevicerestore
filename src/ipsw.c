@@ -1,4 +1,4 @@
-/*
+﻿/*
  * ipsw.c
  * Utilities for extracting and manipulating IPSWs
  *
@@ -21,8 +21,12 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
  */
 
+#ifndef HAVE_CONFIG_H
+#define HAVE_CONFIG_H
+#endif
+
 #ifdef HAVE_CONFIG_H
-#include <config.h>
+#include "config.h"
 #endif
 #include <stdio.h>
 #include <stdlib.h>
@@ -46,27 +50,33 @@
 #include "idevicerestore.h"
 
 #define BUFSIZE 0x100000
+#define PATH_MAX        4096  
 
 static int cancel_flag = 0;
+
+static void idevicerestore_free(void* buffer)
+{
+
+}
 
 static char* build_path(const char* path, const char* file)
 {
 	size_t plen = strlen(path);
 	size_t flen = strlen(file);
-	char *fullpath = malloc(plen + flen + 2);
+	char* fullpath = malloc(plen + flen + 2);
 	if (!fullpath) {
 		return NULL;
 	}
 	memcpy(fullpath, path, plen);
 	fullpath[plen] = '/';
-	memcpy(fullpath+plen+1, file, flen);
-	fullpath[plen+1+flen] = '\0';
+	memcpy(fullpath + plen + 1, file, flen);
+	fullpath[plen + 1 + flen] = '\0';
 	return fullpath;
 }
 
 int ipsw_print_info(const char* path)
 {
-	struct stat fst;
+	struct _stat64 fst;
 
 	if (stat(path, &fst) != 0) {
 		logger(LL_ERROR, "'%s': %s\n", path, strerror(errno));
@@ -111,7 +121,8 @@ int ipsw_print_info(const char* path)
 		}
 		ipsw_close(ipsw);
 		plist_len = (uint32_t)rlen;
-	} else {
+	}
+	else {
 		size_t rlen = 0;
 		if (read_file(thepath, &plist_buf, &rlen) < 0) {
 			logger(LL_ERROR, "Failed to read BuildManifest.plist!\n");
@@ -122,7 +133,7 @@ int ipsw_print_info(const char* path)
 
 	plist_t manifest = NULL;
 	plist_from_memory(plist_buf, plist_len, &manifest, NULL);
-	free(plist_buf);
+	idevicerestore_free(plist_buf);
 
 	plist_t val;
 
@@ -140,8 +151,8 @@ int ipsw_print_info(const char* path)
 	}
 
 	cprintf(FG_WHITE "Product Version: " FG_BRIGHT_YELLOW "%s" COLOR_RESET FG_WHITE "   Build: " FG_BRIGHT_YELLOW "%s" COLOR_RESET "\n", prod_ver, build_ver);
-	free(prod_ver);
-	free(build_ver);
+	idevicerestore_free(prod_ver);
+	idevicerestore_free(build_ver);
 	cprintf(FG_WHITE "Supported Product Types:" COLOR_RESET);
 	val = plist_dict_get_item(manifest, "SupportedProductTypes");
 	if (val) {
@@ -155,10 +166,10 @@ int ipsw_print_info(const char* path)
 					char* item_str = NULL;
 					plist_get_string_val(item, &item_str);
 					cprintf(" " FG_BRIGHT_CYAN "%s" COLOR_RESET, item_str);
-					free(item_str);
+					idevicerestore_free(item_str);
 				}
 			} while (item);
-			free(iter);
+			idevicerestore_free(iter);
 		}
 	}
 	cprintf("\n");
@@ -190,23 +201,26 @@ int ipsw_print_info(const char* path)
 				node = plist_access_path(build_identity, 2, "Info", "RestoreBehavior");
 				if (node) {
 					plist_dict_set_item(group, "RestoreBehavior", plist_copy(node));
-				} else {
+				}
+				else {
 					if (strstr(variant_str, "Upgrade")) {
 						plist_dict_set_item(group, "RestoreBehavior", plist_new_string("Update"));
-					} else if (strstr(variant_str, "Erase")) {
+					}
+					else if (strstr(variant_str, "Erase")) {
 						plist_dict_set_item(group, "RestoreBehavior", plist_new_string("Erase"));
 					}
 				}
 				entries = plist_new_array();
 				plist_dict_set_item(group, "Entries", entries);
 				plist_dict_set_item(build_ids_grouped, variant_str, group);
-			} else {
+			}
+			else {
 				entries = plist_dict_get_item(group, "Entries");
 			}
-			free(variant_str);
+			idevicerestore_free(variant_str);
 			plist_array_append_item(entries, plist_copy(build_identity));
 		} while (build_identity);
-		free(build_id_iter);
+		idevicerestore_free(build_id_iter);
 	}
 
 	plist_dict_iter build_ids_group_iter = NULL;
@@ -228,8 +242,8 @@ int ipsw_print_info(const char* path)
 			node = plist_dict_get_item(group, "RestoreBehavior");
 			plist_get_string_val(node, &rbehavior);
 			cprintf("  " FG_WHITE "[%d] Variant: " FG_BRIGHT_CYAN "%s" FG_WHITE "   Behavior: " FG_BRIGHT_CYAN "%s" COLOR_RESET "\n", group_no, key, rbehavior);
-			free(key);
-			free(rbehavior);
+			idevicerestore_free(key);
+			idevicerestore_free(rbehavior);
 
 			build_ids = plist_dict_get_item(group, "Entries");
 			if (!build_ids) {
@@ -257,9 +271,10 @@ int ipsw_print_info(const char* path)
 					plist_get_string_val(node, &strval);
 					if (strval) {
 						chip_id = strtoull(strval, NULL, 0);
-						free(strval);
+						idevicerestore_free(strval);
 					}
-				} else {
+				}
+				else {
 					plist_get_uint_val(node, &chip_id);
 				}
 
@@ -269,9 +284,10 @@ int ipsw_print_info(const char* path)
 					plist_get_string_val(node, &strval);
 					if (strval) {
 						board_id = strtoull(strval, NULL, 0);
-						free(strval);
+						idevicerestore_free(strval);
 					}
-				} else {
+				}
+				else {
 					plist_get_uint_val(node, &board_id);
 				}
 
@@ -281,14 +297,15 @@ int ipsw_print_info(const char* path)
 				irecv_device_t irecvdev = NULL;
 				if (irecv_devices_get_device_by_hardware_model(hwmodel, &irecvdev) == 0) {
 					cprintf("    ChipID: " FG_GREEN "%04x" COLOR_RESET "   BoardID: " FG_GREEN "%02x" COLOR_RESET "   Model: " FG_YELLOW "%-8s" COLOR_RESET "  " FG_MAGENTA "%s" COLOR_RESET "\n", (int)chip_id, (int)board_id, hwmodel, irecvdev->display_name);
-				} else {
+				}
+				else {
 					cprintf("    ChipID: " FG_GREEN "%04x" COLOR_RESET "   BoardID: " FG_GREEN "%02x" COLOR_RESET "   Model: " FG_YELLOW "%s" COLOR_RESET "\n", (int)chip_id, (int)board_id, hwmodel);
 				}
-				free(hwmodel);
+				idevicerestore_free(hwmodel);
 			} while (build_id);
-			free(build_id_iter);
+			idevicerestore_free(build_id_iter);
 		} while (group);
-		free(build_ids_group_iter);
+		idevicerestore_free(build_ids_group_iter);
 	}
 	plist_free(build_ids_grouped);
 
@@ -313,8 +330,9 @@ ipsw_archive_t ipsw_open(const char* ipsw)
 	}
 	if (S_ISDIR(fst.st_mode)) {
 		archive->zip = 0;
-	} else {
-		struct zip *zip = zip_open(ipsw, 0, &err);
+	}
+	else {
+		struct zip* zip = zip_open(ipsw, 0, &err);
 		if (zip == NULL) {
 			logger(LL_ERROR, "zip_open: %s: %d\n", ipsw, err);
 			free(archive);
@@ -322,23 +340,24 @@ ipsw_archive_t ipsw_open(const char* ipsw)
 		}
 		archive->zip = 1;
 	}
-	archive->path = strdup(ipsw);
+	
+	archive->path = _strdup(ipsw);
 	return (ipsw_archive_t)archive;
 }
 
 void ipsw_close(ipsw_archive_t ipsw)
 {
 	if (ipsw != NULL) {
-		free(ipsw->path);
-		free(ipsw);
+		idevicerestore_free(ipsw->path);
+		idevicerestore_free(ipsw);
 	}
 }
 
 int ipsw_is_directory(const char* ipsw)
 {
-	struct stat fst;
+	struct _stat64 fst;
 	memset(&fst, '\0', sizeof(fst));
-	if (stat(ipsw, &fst) != 0) {
+	if (_stat64(ipsw, &fst) != 0) {
 		return 0;
 	}
 	return S_ISDIR(fst.st_mode);
@@ -353,7 +372,7 @@ int ipsw_get_file_size(ipsw_archive_t ipsw, const char* infile, uint64_t* size)
 
 	if (ipsw->zip) {
 		int err = 0;
-		struct zip *zip = zip_open(ipsw->path, 0, &err);
+		struct zip* zip = zip_open(ipsw->path, 0, &err);
 		if (zip == NULL) {
 			logger(LL_ERROR, "zip_open: %s: %d\n", ipsw->path, err);
 			return -1;
@@ -378,14 +397,15 @@ int ipsw_get_file_size(ipsw_archive_t ipsw, const char* infile, uint64_t* size)
 		zip_close(zip);
 
 		*size = zstat.size;
-	} else {
-		char *filepath = build_path(ipsw->path, infile);
-		struct stat fst;
-		if (stat(filepath, &fst) != 0) {
-			free(filepath);
+	}
+	else {
+		char* filepath = build_path(ipsw->path, infile);
+		struct _stat64 fst;
+		if (_stat64(filepath, &fst) != 0) {
+			idevicerestore_free(filepath);
 			return -1;
 		}
-		free(filepath);
+		idevicerestore_free(filepath);
 
 		*size = fst.st_size;
 	}
@@ -406,7 +426,7 @@ int ipsw_extract_to_file_with_progress(ipsw_archive_t ipsw, const char* infile, 
 
 	if (ipsw->zip) {
 		int err = 0;
-		struct zip *zip = zip_open(ipsw->path, 0, &err);
+		struct zip* zip = zip_open(ipsw->path, 0, &err);
 		if (zip == NULL) {
 			logger(LL_ERROR, "zip_open: %s: %d\n", ipsw->path, err);
 			return -1;
@@ -429,7 +449,7 @@ int ipsw_extract_to_file_with_progress(ipsw_archive_t ipsw, const char* infile, 
 			return -1;
 		}
 
-		char* buffer = (char*) malloc(BUFSIZE);
+		char* buffer = (char*)malloc(BUFSIZE);
 		if (buffer == NULL) {
 			zip_unchange_all(zip);
 			zip_close(zip);
@@ -494,10 +514,11 @@ int ipsw_extract_to_file_with_progress(ipsw_archive_t ipsw, const char* infile, 
 		zip_fclose(zfile);
 		zip_unchange_all(zip);
 		zip_close(zip);
-	} else {
-		char *filepath = build_path(ipsw->path, infile);
-		char actual_filepath[PATH_MAX+1];
-		char actual_outfile[PATH_MAX+1];
+	}
+	else {
+		char* filepath = build_path(ipsw->path, infile);
+		char actual_filepath[PATH_MAX + 1];
+		char actual_outfile[PATH_MAX + 1];
 		if (!filepath) {
 			ret = -1;
 			goto leave;
@@ -506,36 +527,38 @@ int ipsw_extract_to_file_with_progress(ipsw_archive_t ipsw, const char* infile, 
 			logger(LL_ERROR, "realpath failed on %s: %s\n", filepath, strerror(errno));
 			ret = -1;
 			goto leave;
-		} else {
+		}
+		else {
 			actual_outfile[0] = '\0';
 			if (realpath(outfile, actual_outfile) && (strcmp(actual_filepath, actual_outfile) == 0)) {
 				/* files are identical */
 				ret = 0;
-			} else {
+			}
+			else {
 				if (actual_outfile[0] == '\0') {
 					strcpy(actual_outfile, outfile);
 				}
-				FILE *fi = fopen(actual_filepath, "rb");
+				FILE* fi = fopen(actual_filepath, "rb");
 				if (!fi) {
 					logger(LL_ERROR, "fopen: %s: %s\n", actual_filepath, strerror(errno));
 					ret = -1;
 					goto leave;
 				}
-				struct stat fst;
-				if (fstat(fileno(fi), &fst) != 0) {
+				struct _stat64 fst;
+				if (_fstat64(fileno(fi), &fst) != 0) {
 					fclose(fi);
 					logger(LL_ERROR, "fstat: %s: %s\n", actual_filepath, strerror(errno));
 					ret = -1;
 					goto leave;
 				}
-				FILE *fo = fopen(actual_outfile, "wb");
+				FILE* fo = fopen(actual_outfile, "wb");
 				if (!fo) {
 					fclose(fi);
 					logger(LL_ERROR, "fopen: %s: %s\n", actual_outfile, strerror(errno));
 					ret = -1;
 					goto leave;
 				}
-				char* buffer = (char*) malloc(BUFSIZE);
+				char* buffer = (char*)malloc(BUFSIZE);
 				if (buffer == NULL) {
 					fclose(fi);
 					fclose(fo);
@@ -573,13 +596,14 @@ int ipsw_extract_to_file_with_progress(ipsw_archive_t ipsw, const char* infile, 
 					finalize_progress('IPSW');
 				}
 
-				free(buffer);
+				idevicerestore_free(buffer);
 				fclose(fi);
 				fclose(fo);
 			}
 		}
 	leave:
-		free(filepath);
+		printf(filepath);
+		idevicerestore_free(filepath);
 	}
 	if (cancel_flag) {
 		ret = -2;
@@ -600,7 +624,7 @@ int ipsw_file_exists(ipsw_archive_t ipsw, const char* infile)
 
 	if (ipsw->zip) {
 		int err = 0;
-		struct zip *zip = zip_open(ipsw->path, 0, &err);
+		struct zip* zip = zip_open(ipsw->path, 0, &err);
 		if (zip == NULL) {
 			logger(LL_ERROR, "zip_open: %s: %d\n", ipsw->path, err);
 			return 0;
@@ -611,13 +635,14 @@ int ipsw_file_exists(ipsw_archive_t ipsw, const char* infile)
 		if (zindex < 0) {
 			return 0;
 		}
-	} else {
-		char *filepath = build_path(ipsw->path, infile);
+	}
+	else {
+		char* filepath = build_path(ipsw->path, infile);
 		if (access(filepath, R_OK) != 0) {
-			free(filepath);
+			idevicerestore_free(filepath);
 			return 0;
 		}
-		free(filepath);
+		idevicerestore_free(filepath);
 	}
 
 	return 1;
@@ -634,7 +659,7 @@ int ipsw_extract_to_memory(ipsw_archive_t ipsw, const char* infile, void** pbuff
 
 	if (ipsw->zip) {
 		int err = 0;
-		struct zip *zip = zip_open(ipsw->path, 0, &err);
+		struct zip* zip = zip_open(ipsw->path, 0, &err);
 		if (zip == NULL) {
 			logger(LL_ERROR, "zip_open: %s: %d\n", ipsw->path, err);
 			return -1;
@@ -700,11 +725,12 @@ int ipsw_extract_to_memory(ipsw_archive_t ipsw, const char* infile, void** pbuff
 		}
 
 		buffer[size] = '\0';
-	} else {
-		char *filepath = build_path(ipsw->path, infile);
-		struct stat fst;
+	}
+	else {
+		char* filepath = build_path(ipsw->path, infile);
+		struct _stat64 fst;
 #ifdef WIN32
-		if (stat(filepath, &fst) != 0) {
+		if (_stat64(filepath, &fst) != 0) {
 #else
 		if (lstat(filepath, &fst) != 0) {
 #endif
@@ -733,9 +759,10 @@ int ipsw_extract_to_memory(ipsw_archive_t ipsw, const char* infile, void** pbuff
 				free(buffer);
 				return -1;
 			}
-		} else {
+		}
+		else {
 #endif
-			FILE *f = fopen(filepath, "rb");
+			FILE* f = fopen(filepath, "rb");
 			if (!f) {
 				logger(LL_ERROR, "%s: fopen failed for %s: %s\n", __func__, filepath, strerror(errno));
 				free(filepath);
@@ -755,7 +782,7 @@ int ipsw_extract_to_memory(ipsw_archive_t ipsw, const char* infile, void** pbuff
 #endif
 		buffer[size] = '\0';
 
-		free(filepath);
+		idevicerestore_free(filepath);
 	}
 
 	*pbuffer = buffer;
@@ -776,7 +803,7 @@ int ipsw_extract_send(ipsw_archive_t ipsw, const char* infile, int blocksize, ip
 
 	if (ipsw->zip) {
 		int err = 0;
-		struct zip *zip = zip_open(ipsw->path, 0, &err);
+		struct zip* zip = zip_open(ipsw->path, 0, &err);
 		if (zip == NULL) {
 			logger(LL_ERROR, "zip_open: %s: %d\n", ipsw->path, err);
 			return -1;
@@ -808,7 +835,7 @@ int ipsw_extract_send(ipsw_archive_t ipsw, const char* infile, int blocksize, ip
 		}
 
 		total_size = zstat.size;
-		buffer = (unsigned char*) malloc(blocksize);
+		buffer = (unsigned char*)malloc(blocksize);
 		if (buffer == NULL) {
 			zip_fclose(zfile);
 			zip_unchange_all(zip);
@@ -818,13 +845,14 @@ int ipsw_extract_send(ipsw_archive_t ipsw, const char* infile, int blocksize, ip
 		}
 
 		while (done < total_size) {
-			size_t size = total_size-done;
+			size_t size = total_size - done;
 			if (size > blocksize) size = blocksize;
 			zip_int64_t zr = zip_fread(zfile, buffer, size);
 			if (zr < 0) {
 				logger(LL_ERROR, "%s: zip_fread: %s\n", __func__, infile);
 				break;
-			} else if (zr == 0) {
+			}
+			else if (zr == 0) {
 				// EOF
 				break;
 			}
@@ -834,15 +862,16 @@ int ipsw_extract_send(ipsw_archive_t ipsw, const char* infile, int blocksize, ip
 			}
 			done += zr;
 		}
-		free(buffer);
+		idevicerestore_free(buffer);
 		zip_fclose(zfile);
 		zip_unchange_all(zip);
 		zip_close(zip);
-	} else {
-		char *filepath = build_path(ipsw->path, infile);
-		struct stat fst;
+	}
+	else {
+		char* filepath = build_path(ipsw->path, infile);
+		struct _stat64 fst;
 #ifdef WIN32
-		if (stat(filepath, &fst) != 0) {
+		if (_stat64(filepath, &fst) != 0) {
 #else
 		if (lstat(filepath, &fst) != 0) {
 #endif
@@ -868,9 +897,10 @@ int ipsw_extract_send(ipsw_archive_t ipsw, const char* infile, int blocksize, ip
 				return -1;
 			}
 			send_callback(ctx, buffer, (size_t)rl, 0, 0);
-		} else {
+		}
+		else {
 #endif
-			FILE *f = fopen(filepath, "rb");
+			FILE* f = fopen(filepath, "rb");
 			if (!f) {
 				logger(LL_ERROR, "%s: fopen failed for %s: %s\n", __func__, filepath, strerror(errno));
 				free(filepath);
@@ -879,7 +909,7 @@ int ipsw_extract_send(ipsw_archive_t ipsw, const char* infile, int blocksize, ip
 			}
 
 			while (done < total_size) {
-				size_t size = total_size-done;
+				size_t size = total_size - done;
 				if (size > blocksize) size = blocksize;
 				size_t fr = fread(buffer, 1, size, f);
 				if (fr != size) {
@@ -896,8 +926,8 @@ int ipsw_extract_send(ipsw_archive_t ipsw, const char* infile, int blocksize, ip
 #ifndef WIN32
 		}
 #endif
-		free(filepath);
-		free(buffer);
+		idevicerestore_free(filepath);
+		idevicerestore_free(buffer);
 	}
 
 	if (done < total_size) {
@@ -911,7 +941,7 @@ int ipsw_extract_send(ipsw_archive_t ipsw, const char* infile, int blocksize, ip
 	return 0;
 }
 
-int ipsw_extract_build_manifest(ipsw_archive_t ipsw, plist_t* buildmanifest, int *tss_enabled)
+int ipsw_extract_build_manifest(ipsw_archive_t ipsw, plist_t * buildmanifest, int* tss_enabled)
 {
 	size_t size = 0;
 	void* data = NULL;
@@ -941,7 +971,7 @@ int ipsw_extract_build_manifest(ipsw_archive_t ipsw, plist_t* buildmanifest, int
 	return -1;
 }
 
-int ipsw_extract_restore_plist(ipsw_archive_t ipsw, plist_t* restore_plist)
+int ipsw_extract_restore_plist(ipsw_archive_t ipsw, plist_t * restore_plist)
 {
 	size_t size = 0;
 	void* data = NULL;
@@ -955,12 +985,12 @@ int ipsw_extract_restore_plist(ipsw_archive_t ipsw, plist_t* restore_plist)
 	return -1;
 }
 
-static int ipsw_list_contents_recurse(ipsw_archive_t ipsw, const char *path, ipsw_list_cb cb, void *ctx)
+static int ipsw_list_contents_recurse(ipsw_archive_t ipsw, const char* path, ipsw_list_cb cb, void* ctx)
 {
 	int ret = 0;
-	char *base = build_path(ipsw->path, path);
+	char* base = build_path(ipsw->path, path);
 
-	DIR *dirp = opendir(base);
+	DIR* dirp = opendir(base);
 
 	if (!dirp) {
 		logger(LL_ERROR, "failed to open directory %s\n", base);
@@ -969,21 +999,21 @@ static int ipsw_list_contents_recurse(ipsw_archive_t ipsw, const char *path, ips
 	}
 
 	while (ret >= 0) {
-		struct dirent *dir = readdir(dirp);
+		struct dirent* dir = readdir(dirp);
 		if (!dir)
 			break;
 
 		if (!strcmp(dir->d_name, ".") || !strcmp(dir->d_name, ".."))
 			continue;
 
-		char *fpath = build_path(base, dir->d_name);
-		char *subpath;
+		char* fpath = build_path(base, dir->d_name);
+		char* subpath;
 		if (*path)
 			subpath = build_path(path, dir->d_name);
 		else
-			subpath = strdup(dir->d_name);
+			subpath = _strdup(dir->d_name);
 
-		struct stat st;
+		struct _stat64 st;
 #ifdef WIN32
 		ret = stat(fpath, &st);
 #else
@@ -1001,16 +1031,16 @@ static int ipsw_list_contents_recurse(ipsw_archive_t ipsw, const char *path, ips
 		if (ret >= 0 && S_ISDIR(st.st_mode))
 			ipsw_list_contents_recurse(ipsw, subpath, cb, ctx);
 
-		free(fpath);
-		free(subpath);
+		idevicerestore_free(fpath);
+		idevicerestore_free(subpath);
 	}
 
 	closedir(dirp);
-	free(base);
+	idevicerestore_free(base);
 	return ret;
 }
 
-int ipsw_list_contents(ipsw_archive_t ipsw, ipsw_list_cb cb, void *ctx)
+int ipsw_list_contents(ipsw_archive_t ipsw, ipsw_list_cb cb, void* ctx)
 {
 	int ret = 0;
 
@@ -1021,7 +1051,7 @@ int ipsw_list_contents(ipsw_archive_t ipsw, ipsw_list_cb cb, void *ctx)
 
 	if (ipsw->zip) {
 		int err = 0;
-		struct zip *zip = zip_open(ipsw->path, 0, &err);
+		struct zip* zip = zip_open(ipsw->path, 0, &err);
 		if (zip == NULL) {
 			logger(LL_ERROR, "zip_open: %s: %d\n", ipsw->path, err);
 			return -1;
@@ -1056,32 +1086,33 @@ int ipsw_list_contents(ipsw_archive_t ipsw, ipsw_list_cb cb, void *ctx)
 				continue;
 			}
 
-			struct stat st;
+			struct _stat64 st;
 			memset(&st, 0, sizeof(st));
 			st.st_ino = 1 + index;
 			st.st_nlink = 1;
 			st.st_mode = attributes >> 16;
 			st.st_size = stat.size;
 
-			char *name = strdup(stat.name);
+			char* name = _strdup(stat.name);
 			if (name[strlen(name) - 1] == '/')
 				name[strlen(name) - 1] = '\0';
 
 			ret = cb(ctx, ipsw, name, &st);
 
-			free(name);
+			idevicerestore_free(name);
 
 			if (ret < 0)
 				break;
 		}
-	} else {
+	}
+	else {
 		ret = ipsw_list_contents_recurse(ipsw, "", cb, ctx);
 	}
 
 	return ret;
 }
 
-int ipsw_get_signed_firmwares(const char* product, plist_t* firmwares)
+int ipsw_get_signed_firmwares(const char* product, plist_t * firmwares)
 {
 	char url[256];
 	char *jdata = NULL;
@@ -1105,7 +1136,7 @@ int ipsw_get_signed_firmwares(const char* product, plist_t* firmwares)
 		return -1;
 	}
 	plist_from_json(jdata, jsize, &dict);
-	free(jdata);
+	idevicerestore_free(jdata);
 	if (!dict || plist_get_node_type(dict) != PLIST_DICT) {
 		logger(LL_ERROR, "Failed to parse json data.\n");
 		plist_free(dict);
@@ -1180,10 +1211,10 @@ int ipsw_get_latest_fw(plist_t version_data, const char* product, char** fwurl, 
 				if (v > major)
 					major = v;
 			}
-			free(key);
+			idevicerestore_free(key);
 		}
 	} while (val);
-	free(iter);
+	idevicerestore_free(iter);
 
 	if (major == 0) {
 		logger(LL_ERROR, "%s: ERROR: Can't find major version?!\n", __func__);
@@ -1213,7 +1244,7 @@ int ipsw_get_latest_fw(plist_t version_data, const char* product, char** fwurl, 
 		free(strval);
 		return -1;
 	}
-	free(strval);
+	idevicerestore_free(strval);
 
 	strval = NULL;
 	n2 = plist_dict_get_item(n1, "SameAs");
@@ -1222,7 +1253,7 @@ int ipsw_get_latest_fw(plist_t version_data, const char* product, char** fwurl, 
 	}
 	if (strval) {
 		n1 = plist_access_path(version_data, 5, "MobileDeviceSoftwareVersionsByVersion", majstr, "MobileDeviceSoftwareVersions", product, strval);
-		free(strval);
+		idevicerestore_free(strval);
 		strval = NULL;
 		if (!n1 || (plist_dict_get_size(n1) == 0)) {
 			logger(LL_ERROR, "%s: ERROR: Can't get MobileDeviceSoftwareVersions/%s dict\n", __func__, product);
@@ -1236,7 +1267,7 @@ int ipsw_get_latest_fw(plist_t version_data, const char* product, char** fwurl, 
 		plist_get_string_val(n2, &strval);
 		if (strval) {
 			n1 = plist_access_path(version_data, 5, "MobileDeviceSoftwareVersionsByVersion", majstr, "MobileDeviceSoftwareVersions", product, strval);
-			free(strval);
+			idevicerestore_free(strval);
 			strval = NULL;
 		}
 	}
@@ -1258,13 +1289,13 @@ int ipsw_get_latest_fw(plist_t version_data, const char* product, char** fwurl, 
 				if (strlen(strval) == 40) {
 					int i;
 					int v;
-					for (i = 0; i < 40; i+=2) {
+					for (i = 0; i < 40; i += 2) {
 						v = 0;
-						sscanf(strval+i, "%02x", &v);
-						sha1buf[i/2] = (unsigned char)v;
+						sscanf(strval + i, "%02x", &v);
+						sha1buf[i / 2] = (unsigned char)v;
 					}
 				}
-				free(strval);
+				idevicerestore_free(strval);
 			}
 		}
 	}
@@ -1272,7 +1303,7 @@ int ipsw_get_latest_fw(plist_t version_data, const char* product, char** fwurl, 
 	return 0;
 }
 
-static int sha1_verify_fp(FILE* f, unsigned char* expected_sha1)
+static int sha1_verify_fp(FILE * f, unsigned char* expected_sha1)
 {
 	unsigned char tsha1[20];
 	char buf[8192];
@@ -1298,7 +1329,7 @@ static int sha1_verify_fp(FILE* f, unsigned char* expected_sha1)
 	return (memcmp(expected_sha1, tsha1, 20) == 0) ? 1 : 0;
 }
 
-int ipsw_download_fw(const char *fwurl, unsigned char* isha1, const char* todir, char** ipswfile)
+int ipsw_download_fw(const char* fwurl, unsigned char* isha1, const char* todir, char** ipswfile)
 {
 	char* fwfn = strrchr(fwurl, '/');
 	if (!fwfn) {
@@ -1324,7 +1355,7 @@ int ipsw_download_fw(const char *fwurl, unsigned char* isha1, const char* todir,
 	}
 
 	int need_dl = 0;
-	unsigned char zsha1[20] = {0, };
+	unsigned char zsha1[20] = { 0, };
 	FILE* f = fopen(fwlfn, "rb");
 	if (f) {
 		if (memcmp(zsha1, isha1, 20) != 0) {
@@ -1339,7 +1370,8 @@ int ipsw_download_fw(const char *fwurl, unsigned char* isha1, const char* todir,
 			finalize_progress('SHA1');
 		}
 		fclose(f);
-	} else {
+	}
+	else {
 		need_dl = 1;
 	}
 
@@ -1348,7 +1380,8 @@ int ipsw_download_fw(const char *fwurl, unsigned char* isha1, const char* todir,
 		if (strncmp(fwurl, "protected:", 10) == 0) {
 			logger(LL_ERROR, "Can't download '%s' because it needs a purchase.\n", fwfn);
 			res = -3;
-		} else {
+		}
+		else {
 			remove(fwlfn);
 			logger(LL_INFO, "Downloading firmware (%s)\n", fwurl);
 			download_to_file(fwurl, fwlfn, 1);
@@ -1381,7 +1414,7 @@ int ipsw_download_fw(const char *fwurl, unsigned char* isha1, const char* todir,
 		}
 	}
 	if (res == 0) {
-		*ipswfile = strdup(fwlfn);
+		*ipswfile = _strdup(fwlfn);
 	}
 
 	if (unlock_file(&lockinfo) != 0) {
@@ -1413,7 +1446,7 @@ int ipsw_download_latest_fw(plist_t version_data, const char* product, const cha
 
 	int res = ipsw_download_fw(fwurl, isha1, todir, ipswfile);
 
-	free(fwurl);
+	idevicerestore_free(fwurl);
 
 	return res;
 }
@@ -1428,7 +1461,7 @@ ipsw_file_handle_t ipsw_file_open(ipsw_archive_t ipsw, const char* path)
 	ipsw_file_handle_t handle = (ipsw_file_handle_t)calloc(1, sizeof(struct ipsw_file_handle));
 	if (ipsw->zip) {
 		int err = 0;
-		struct zip *zip = zip_open(ipsw->path, 0, &err);
+		struct zip* zip = zip_open(ipsw->path, 0, &err);
 		if (zip == NULL) {
 			logger(LL_ERROR, "zip_open: %s: %d\n", ipsw->path, err);
 			return NULL;
@@ -1440,7 +1473,7 @@ ipsw_file_handle_t ipsw_file_open(ipsw_archive_t ipsw, const char* path)
 			logger(LL_ERROR, "zip_name_locate: %s not found\n", path);
 			zip_unchange_all(zip);
 			zip_close(zip);
-			free(handle);
+			idevicerestore_free(handle);
 			return NULL;
 		}
 		handle->zfile = zip_fopen_index(zip, zindex, 0);
@@ -1448,7 +1481,7 @@ ipsw_file_handle_t ipsw_file_open(ipsw_archive_t ipsw, const char* path)
 			logger(LL_ERROR, "zip_fopen_index: %s could not be opened\n", path);
 			zip_unchange_all(zip);
 			zip_close(zip);
-			free(handle);
+			idevicerestore_free(handle);
 			return NULL;
 		}
 		zip_stat_init(&zst);
@@ -1456,17 +1489,18 @@ ipsw_file_handle_t ipsw_file_open(ipsw_archive_t ipsw, const char* path)
 		handle->size = zst.size;
 		handle->seekable = (zst.comp_method == ZIP_CM_STORE);
 		handle->zip = zip;
-	} else {
-		struct stat st;
-		char *filepath = build_path(ipsw->path, path);
+	}
+	else {
+		struct _stat64 st;
+		char* filepath = build_path(ipsw->path, path);
 		handle->file = fopen(filepath, "rb");
-		free(filepath);
+		idevicerestore_free(filepath);
 		if (!handle->file) {
 			logger(LL_ERROR, "fopen: %s could not be opened\n", path);
 			free(handle);
 			return NULL;
 		}
-		fstat(fileno(handle->file), &st);
+		_fstat64(fileno(handle->file), &st);
 		handle->size = st.st_size;
 		handle->seekable = 1;
 	}
@@ -1479,10 +1513,11 @@ void ipsw_file_close(ipsw_file_handle_t handle)
 		zip_fclose(handle->zfile);
 		zip_unchange_all(handle->zip);
 		zip_close(handle->zip);
-	} else if (handle && handle->file) {
+	}
+	else if (handle && handle->file) {
 		fclose(handle->file);
 	}
-	free(handle);
+	idevicerestore_free(handle);
 }
 
 uint64_t ipsw_file_size(ipsw_file_handle_t handle)
@@ -1498,7 +1533,8 @@ int64_t ipsw_file_read(ipsw_file_handle_t handle, void* buffer, size_t size)
 	if (handle && handle->zfile) {
 		zip_int64_t zr = zip_fread(handle->zfile, buffer, size);
 		return (int64_t)zr;
-	} else if (handle && handle->file) {
+	}
+	else if (handle && handle->file) {
 		return fread(buffer, 1, size, handle->file);
 	} else {
 		logger(LL_ERROR, "%s: Invalid file handle\n", __func__);
@@ -1510,7 +1546,8 @@ int ipsw_file_seek(ipsw_file_handle_t handle, int64_t offset, int whence)
 {
 	if (handle && handle->zfile) {
 		return zip_fseek(handle->zfile, offset, whence);
-	} else if (handle && handle->file) {
+	}
+	else if (handle && handle->file) {
 #ifdef WIN32
 		if (whence == SEEK_SET) {
 			rewind(handle->file);
@@ -1529,7 +1566,8 @@ int64_t ipsw_file_tell(ipsw_file_handle_t handle)
 {
 	if (handle && handle->zfile) {
 		return zip_ftell(handle->zfile);
-	} else if (handle && handle->file) {
+	}
+	else if (handle && handle->file) {
 #ifdef WIN32
 		return _lseeki64(fileno(handle->file), 0, SEEK_CUR);
 #else

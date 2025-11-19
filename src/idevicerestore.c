@@ -1,4 +1,4 @@
-/*
+﻿/*
  * idevicerestore.c
  * Restore device firmware and filesystem
  *
@@ -21,6 +21,11 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
  */
 
+
+#ifndef HAVE_CONFIG_H
+#define HAVE_CONFIG_H
+#endif
+
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif
@@ -30,10 +35,10 @@
 #include <string.h>
 #include <unistd.h>
 #include <ctype.h>
-#include <getopt.h>
+#include "getopt.h"
 #include <plist/plist.h>
 #include <zlib.h>
-#include <libgen.h>
+ //#include <libgen.h>
 #include <signal.h>
 
 #include <curl/curl.h>
@@ -62,6 +67,12 @@
 #include "locking.h"
 
 #define VERSION_XML "version.xml"
+
+#ifdef _MSC_VER 
+//not #if defined(_WIN32) || defined(_WIN64) because we have strncasecmp in mingw
+#define strncasecmp _strnicmp
+#define strcasecmp _stricmp
+#endif
 
 #ifndef IDEVICERESTORE_NOMAIN
 static struct option longopts[] = {
@@ -93,6 +104,11 @@ static struct option longopts[] = {
 	{ "logfile",        required_argument, NULL,  3  },
 	{ NULL, 0, NULL, 0 }
 };
+
+static void idevicerestore_free(void* buffer)
+{
+
+}
 
 static void usage(int argc, char* argv[], int err)
 {
@@ -177,28 +193,29 @@ static int load_version_data(struct idevicerestore_client_t* client)
 		return -1;
 	}
 
-	struct stat fst;
+	struct _stat64 fst;
 	int cached = 0;
 
 	char version_xml[1024];
 
 	if (client->cache_dir) {
-		if (stat(client->cache_dir, &fst) < 0) {
+		if (_stat64(client->cache_dir, &fst) < 0) {
 			mkdir_with_parents(client->cache_dir, 0755);
 		}
 		strcpy(version_xml, client->cache_dir);
 		strcat(version_xml, "/");
 		strcat(version_xml, VERSION_XML);
-	} else {
+	}
+	else {
 		strcpy(version_xml, VERSION_XML);
 	}
 
-	if ((stat(version_xml, &fst) < 0) || ((time(NULL)-86400) > fst.st_mtime)) {
+	if ((_stat64(version_xml, &fst) < 0) || ((time(NULL) - 86400) > fst.st_mtime)) {
 		char version_xml_tmp[1024];
 		strcpy(version_xml_tmp, version_xml);
 		strcat(version_xml_tmp, ".tmp");
 
-		if (download_to_file("http://itunes.apple.com/check/version",  version_xml_tmp, 0) == 0) {
+		if (download_to_file("http://itunes.apple.com/check/version", version_xml_tmp, 0) == 0) {
 			remove(version_xml);
 			if (rename(version_xml_tmp, version_xml) < 0) {
 				logger(LL_ERROR, "Could not update '%s'\n", version_xml);
@@ -206,11 +223,12 @@ static int load_version_data(struct idevicerestore_client_t* client)
 				logger(LL_INFO, "Updated version data.\n");
 			}
 		}
-	} else {
+	}
+	else {
 		cached = 1;
 	}
 
-	char *verbuf = NULL;
+	char* verbuf = NULL;
 	size_t verlen = 0;
 	read_file(version_xml, (void**)&verbuf, &verlen);
 
@@ -221,7 +239,7 @@ static int load_version_data(struct idevicerestore_client_t* client)
 
 	client->version_data = NULL;
 	plist_from_xml(verbuf, verlen, &client->version_data);
-	free(verbuf);
+	idevicerestore_free(verbuf);
 
 	if (!client->version_data) {
 		remove(version_xml);
@@ -236,23 +254,23 @@ static int load_version_data(struct idevicerestore_client_t* client)
 	return 0;
 }
 
-static int32_t get_version_num(const char *s_ver)
+static int32_t get_version_num(const char* s_ver)
 {
-        int vers[3] = {0, 0, 0};
-        if (sscanf(s_ver, "%d.%d.%d", &vers[0], &vers[1], &vers[2]) >= 2) {
-                return ((vers[0] & 0xFF) << 16) | ((vers[1] & 0xFF) << 8) | (vers[2] & 0xFF);
-        }
-        return 0x00FFFFFF;
+	int vers[3] = { 0, 0, 0 };
+	if (sscanf(s_ver, "%d.%d.%d", &vers[0], &vers[1], &vers[2]) >= 2) {
+		return ((vers[0] & 0xFF) << 16) | ((vers[1] & 0xFF) << 8) | (vers[2] & 0xFF);
+	}
+	return 0x00FFFFFF;
 }
 
-static int compare_versions(const char *s_ver1, const char *s_ver2)
+static int compare_versions(const char* s_ver1, const char* s_ver2)
 {
 	return (get_version_num(s_ver1) & 0xFFFF00) - (get_version_num(s_ver2) & 0xFFFF00);
 }
 
-static void idevice_event_cb(const idevice_event_t *event, void *userdata)
+static void idevice_event_cb(const idevice_event_t* event, void* userdata)
 {
-	struct idevicerestore_client_t *client = (struct idevicerestore_client_t*)userdata;
+	struct idevicerestore_client_t* client = (struct idevicerestore_client_t*)userdata;
 #ifdef HAVE_ENUM_IDEVICE_CONNECTION_TYPE
 	if (event->conn_type != CONNECTION_USBMUXD) {
 		// ignore everything but devices connected through USB
@@ -269,7 +287,8 @@ static void idevice_event_cb(const idevice_event_t *event, void *userdata)
 			logger(LL_DEBUG, "%s: device %016" PRIx64 " (udid: %s) connected in normal mode\n", __func__, client->ecid, client->udid);
 			cond_signal(&client->device_event_cond);
 			mutex_unlock(&client->device_event_mutex);
-		} else if (client->ecid && restore_check_mode(client) == 0) {
+		}
+		else if (client->ecid && restore_check_mode(client) == 0) {
 			mutex_lock(&client->device_event_mutex);
 			client->mode = MODE_RESTORE;
 			logger(LL_DEBUG, "%s: device %016" PRIx64 " (udid: %s) connected in restore mode\n", __func__, client->ecid, client->udid);
@@ -291,9 +310,9 @@ static void idevice_event_cb(const idevice_event_t *event, void *userdata)
 	}
 }
 
-static void irecv_event_cb(const irecv_device_event_t* event, void *userdata)
+static void irecv_event_cb(const irecv_device_event_t* event, void* userdata)
 {
-	struct idevicerestore_client_t *client = (struct idevicerestore_client_t*)userdata;
+	struct idevicerestore_client_t* client = (struct idevicerestore_client_t*)userdata;
 	if (event->type == IRECV_DEVICE_ADD) {
 		if (!client->udid && !client->ecid) {
 			client->ecid = event->device_info->ecid;
@@ -301,23 +320,23 @@ static void irecv_event_cb(const irecv_device_event_t* event, void *userdata)
 		if (client->ecid && event->device_info->ecid == client->ecid) {
 			mutex_lock(&client->device_event_mutex);
 			switch (event->mode) {
-				case IRECV_K_WTF_MODE:
-					client->mode = MODE_WTF;
-					break;
-				case IRECV_K_DFU_MODE:
-					client->mode = MODE_DFU;
-					break;
-				case IRECV_K_PORT_DFU_MODE:
-					client->mode = MODE_PORTDFU;
-					break;
-				case IRECV_K_RECOVERY_MODE_1:
-				case IRECV_K_RECOVERY_MODE_2:
-				case IRECV_K_RECOVERY_MODE_3:
-				case IRECV_K_RECOVERY_MODE_4:
-					client->mode = MODE_RECOVERY;
-					break;
-				default:
-					client->mode = MODE_UNKNOWN;
+			case IRECV_K_WTF_MODE:
+				client->mode = MODE_WTF;
+				break;
+			case IRECV_K_DFU_MODE:
+				client->mode = MODE_DFU;
+				break;
+			case IRECV_K_PORT_DFU_MODE:
+				client->mode = MODE_PORTDFU;
+				break;
+			case IRECV_K_RECOVERY_MODE_1:
+			case IRECV_K_RECOVERY_MODE_2:
+			case IRECV_K_RECOVERY_MODE_3:
+			case IRECV_K_RECOVERY_MODE_4:
+				client->mode = MODE_RECOVERY;
+				break;
+			default:
+				client->mode = MODE_UNKNOWN;
 			}
 			logger(LL_DEBUG, "%s: device %016" PRIx64 " (udid: %s) connected in %s mode\n", __func__, client->ecid, (client->udid) ? client->udid : "N/A", client->mode->string);
 			if (!client->device) {
@@ -326,7 +345,8 @@ static void irecv_event_cb(const irecv_device_event_t* event, void *userdata)
 			cond_signal(&client->device_event_cond);
 			mutex_unlock(&client->device_event_mutex);
 		}
-	} else if (event->type == IRECV_DEVICE_REMOVE) {
+	}
+	else if (event->type == IRECV_DEVICE_REMOVE) {
 		if (client->ecid && event->device_info->ecid == client->ecid) {
 			mutex_lock(&client->device_event_mutex);
 			client->mode = MODE_UNKNOWN;
@@ -441,22 +461,24 @@ int idevicerestore_start(struct idevicerestore_client_t* client)
 			char* fnpart = strrchr(s_wtfurl, '/');
 			if (!fnpart) {
 				fnpart = (char*)"x12220000_5_Recovery.ipsw";
-			} else {
+			}
+			else {
 				fnpart++;
 			}
-			struct stat fst;
+			struct _stat64 fst;
 			char wtfipsw[1024];
 			if (client->cache_dir) {
-				if (stat(client->cache_dir, &fst) < 0) {
+				if (_stat64(client->cache_dir, &fst) < 0) {
 					mkdir_with_parents(client->cache_dir, 0755);
 				}
 				strcpy(wtfipsw, client->cache_dir);
 				strcat(wtfipsw, "/");
 				strcat(wtfipsw, fnpart);
-			} else {
+			}
+			else {
 				strcpy(wtfipsw, fnpart);
 			}
-			if (stat(wtfipsw, &fst) != 0) {
+			if (_stat64(wtfipsw, &fst) != 0) {
 				download_to_file(s_wtfurl, wtfipsw, 0);
 			}
 
@@ -476,7 +498,7 @@ int idevicerestore_start(struct idevicerestore_client_t* client)
 		}
 		dfu_client_free(client);
 
-		free(wtftmp);
+		idevicerestore_free(wtftmp);
 
 		cond_wait_timeout(&client->device_event_cond, &client->device_event_mutex, 10000);
 		if (client->mode != MODE_DFU || (client->flags & FLAG_QUIT)) {
@@ -558,9 +580,9 @@ int idevicerestore_start(struct idevicerestore_client_t* client)
 	}
 
 	if (client->flags & FLAG_LATEST) {
-		char *fwurl = NULL;
+		char* fwurl = NULL;
 		unsigned char fwsha1[20];
-		unsigned char *p_fwsha1 = NULL;
+		unsigned char* p_fwsha1 = NULL;
 		plist_t signed_fws = NULL;
 		int res = ipsw_get_signed_firmwares(client->device->product_type, &signed_fws);
 		if (res < 0) {
@@ -601,7 +623,7 @@ int idevicerestore_start(struct idevicerestore_client_t* client)
 					printf("Invalid input value. Must be in range: 1..%u\n", count);
 					continue;
 				}
-				selected_fw = plist_array_get_item(signed_fws, (uint32_t)selected-1);
+				selected_fw = plist_array_get_item(signed_fws, (uint32_t)selected - 1);
 				break;
 			}
 		} else {
@@ -612,22 +634,23 @@ int idevicerestore_start(struct idevicerestore_client_t* client)
 			logger(LL_ERROR, "failed to select latest firmware?!\n");
 			plist_free(signed_fws);
 			return -1;
-		} else {
+		}
+		else {
 			plist_t p_version = plist_dict_get_item(selected_fw, "version");
 			plist_t p_build = plist_dict_get_item(selected_fw, "buildid");
 			logger(LL_NOTICE, "Selected firmware %s (build %s)\n", plist_get_string_ptr(p_version, NULL), plist_get_string_ptr(p_build, NULL));
 			plist_t p_url = plist_dict_get_item(selected_fw, "url");
 			plist_t p_sha1 = plist_dict_get_item(selected_fw, "sha1sum");
-			char *s_sha1 = NULL;
+			char* s_sha1 = NULL;
 			plist_get_string_val(p_url, &fwurl);
 			plist_get_string_val(p_sha1, &s_sha1);
 			if (strlen(s_sha1) == 40) {
 				int i;
 				int v;
-				for (i = 0; i < 40; i+=2) {
+				for (i = 0; i < 40; i += 2) {
 					v = 0;
-					sscanf(s_sha1+i, "%02x", &v);
-					fwsha1[i/2] = (unsigned char)v;
+					sscanf(s_sha1 + i, "%02x", &v);
+					fwsha1[i / 2] = (unsigned char)v;
 				}
 				p_fwsha1 = &fwsha1[0];
 			} else {
@@ -644,16 +667,17 @@ int idevicerestore_start(struct idevicerestore_client_t* client)
 		char* ipsw = NULL;
 		res = ipsw_download_fw(fwurl, p_fwsha1, client->cache_dir, &ipsw);
 		if (res != 0) {
-			free(ipsw);
+			idevicerestore_free(ipsw);
 			return res;
-		} else {
+		}
+		else {
 			client->ipsw = ipsw_open(ipsw);
 			if (!client->ipsw) {
 				logger(LL_ERROR, "Failed to open ipsw '%s'\n", ipsw);
 				free(ipsw);
 				return -1;
 			}
-			free(ipsw);
+			idevicerestore_free(ipsw);
 		}
 	}
 	idevicerestore_progress(client, RESTORE_STEP_DETECT, 0.6);
@@ -810,7 +834,7 @@ int idevicerestore_start(struct idevicerestore_client_t* client)
 			return -1;
 		}
 		plist_free(response);
-		free(uarp_buf);
+		idevicerestore_free(uarp_buf);
 
 		if (client->flags & FLAG_KEEP_PERS) {
 			write_file("Ace3Binary", ace3bin, ace3bin_size);
@@ -908,16 +932,16 @@ int idevicerestore_start(struct idevicerestore_client_t* client)
 				return -1;
 			}
 
-			char *tok = strtok(fmanifest, "\r\n");
+			char* tok = strtok(fmanifest, "\r\n");
 			int fc = 0;
 			while (tok) {
-				files[fc++] = strdup(tok);
+				files[fc++] = _strdup(tok);
 				if (fc >= 16) {
 					break;
 				}
 				tok = strtok(NULL, "\r\n");
 			}
-			free(fmanifest);
+			idevicerestore_free(fmanifest);
 
 			manifest = plist_new_dict();
 
@@ -939,7 +963,7 @@ int idevicerestore_start(struct idevicerestore_client_t* client)
 					logger(LL_WARNING, "Unhandled component %s\n", files[x]);
 					plist_free(comp);
 				}
-				free(files[x]);
+				idevicerestore_free(files[x]);
 				files[x] = NULL;
 			}
 
@@ -968,7 +992,8 @@ int idevicerestore_start(struct idevicerestore_client_t* client)
 				strncpy(tt, lcmodel, 3);
 				tt[3] = 0;
 				kdict = plist_dict_get_item(node, tt);
-			} else {
+			}
+			else {
 				// Populated in older iOS IPSWs
 				kdict = plist_dict_get_item(client->build_manifest, "RestoreKernelCaches");
 			}
@@ -1028,11 +1053,14 @@ int idevicerestore_start(struct idevicerestore_client_t* client)
 			// finally add manifest
 			plist_dict_set_item(build_identity, "Manifest", manifest);
 		}
-	} else if (client->restore_variant) {
+	}
+	else if (client->restore_variant) {
 		build_identity = build_manifest_get_build_identity_for_model_with_variant(client->build_manifest, client->device->hardware_model, client->restore_variant, 1);
-	} else if (client->flags & FLAG_ERASE) {
+	}
+	else if (client->flags & FLAG_ERASE) {
 		build_identity = build_manifest_get_build_identity_for_model_with_variant(client->build_manifest, client->device->hardware_model, RESTORE_VARIANT_ERASE_INSTALL, 0);
-	} else {
+	}
+	else {
 		build_identity = build_manifest_get_build_identity_for_model_with_variant(client->build_manifest, client->device->hardware_model, RESTORE_VARIANT_UPGRADE_INSTALL, 0);
 		if (!build_identity) {
 			build_identity = build_manifest_get_build_identity_for_model(client->build_manifest, client->device->hardware_model);
@@ -1082,12 +1110,12 @@ int idevicerestore_start(struct idevicerestore_client_t* client)
 #if 0
 		char input[64];
 		printf("################################ [ WARNING ] #################################\n"
-		       "# You are about to perform an *ERASE* restore. ALL DATA on the target device #\n"
-		       "# will be IRREVERSIBLY DESTROYED. If you want to update your device without  #\n"
-		       "# erasing the user data, hit CTRL+C now and restart without -e or --erase    #\n"
-		       "# command line switch.                                                       #\n"
-		       "# If you want to continue with the ERASE, please type YES and press ENTER.   #\n"
-		       "##############################################################################\n");
+			"# You are about to perform an *ERASE* restore. ALL DATA on the target device #\n"
+			"# will be IRREVERSIBLY DESTROYED. If you want to update your device without  #\n"
+			"# erasing the user data, hit CTRL+C now and restart without -e or --erase    #\n"
+			"# command line switch.                                                       #\n"
+			"# If you want to continue with the ERASE, please type YES and press ENTER.   #\n"
+			"##############################################################################\n");
 		while (1) {
 			printf("> ");
 			fflush(stdout);
@@ -1099,7 +1127,8 @@ int idevicerestore_start(struct idevicerestore_client_t* client)
 			}
 			if (*input != '\0' && !strcmp(input, "YES")) {
 				break;
-			} else {
+			}
+			else {
 				printf("Invalid input. Please type YES or hit CTRL+C to abort.\n");
 				continue;
 			}
@@ -1138,23 +1167,24 @@ int idevicerestore_start(struct idevicerestore_client_t* client)
 
 	if (needs_os_extraction && !(client->flags & FLAG_SHSHONLY)) {
 		char* tmpf = NULL;
-		struct stat st;
+		struct _stat64 st;
 		if (client->cache_dir) {
-			memset(&st, '\0', sizeof(struct stat));
-			if (stat(client->cache_dir, &st) < 0) {
+			memset(&st, '\0', sizeof(struct _stat64));
+			if (_stat64(client->cache_dir, &st) < 0) {
 				mkdir_with_parents(client->cache_dir, 0755);
 			}
-			char* ipsw_basename = strdup(path_get_basename(client->ipsw->path));
+			char* ipsw_basename = _strdup(path_get_basename(client->ipsw->path));
 			char* p = strrchr(ipsw_basename, '.');
-			if (p && isalpha(*(p+1))) {
+			if (p && isalpha(*(p + 1))) {
 				*p = '\0';
 			}
 			tmpf = string_build_path(client->cache_dir, ipsw_basename, NULL);
 			mkdir_with_parents(tmpf, 0755);
-			free(tmpf);
+			idevicerestore_free(tmpf);
 			tmpf = string_build_path(client->cache_dir, ipsw_basename, os_path, NULL);
-			free(ipsw_basename);
-		} else {
+			idevicerestore_free(ipsw_basename);
+		}
+		else {
 			tmpf = get_temp_filename(NULL);
 			client->delete_fs = 1;
 		}
@@ -1162,8 +1192,8 @@ int idevicerestore_start(struct idevicerestore_client_t* client)
 		/* check if we already have it extracted */
 		uint64_t fssize = 0;
 		ipsw_get_file_size(client->ipsw, os_path, &fssize);
-		memset(&st, '\0', sizeof(struct stat));
-		if (stat(tmpf, &st) == 0) {
+		memset(&st, '\0', sizeof(struct _stat64));
+		if (_stat64(tmpf, &st) == 0) {
 			if ((fssize > 0) && ((uint64_t)st.st_size == fssize)) {
 				logger(LL_INFO, "Using cached filesystem from '%s'\n", tmpf);
 				client->filesystem = tmpf;
@@ -1176,7 +1206,7 @@ int idevicerestore_start(struct idevicerestore_client_t* client)
 				logger(LL_ERROR, "Unable to extract filesystem from IPSW\n");
 				logger(LL_INFO, "Removing %s\n", tmpf);
 				unlink(tmpf);
-				free(tmpf);
+				idevicerestore_free(tmpf);
 				return -1;
 			}
 			client->filesystem = tmpf;
@@ -1211,7 +1241,8 @@ int idevicerestore_start(struct idevicerestore_client_t* client)
 						logger(LL_ERROR, "An error occurred while creating the stashbag.\n");
 					}
 					return -1;
-				} else if (err == 1) {
+				}
+				else if (err == 1) {
 					stashbag_commit_required = 1;
 				}
 				plist_free(manifest);
@@ -1228,12 +1259,13 @@ int idevicerestore_start(struct idevicerestore_client_t* client)
 
 			if (!client->nonce || (nonce_size != client->nonce_size) || (memcmp(nonce, client->nonce, nonce_size) != 0)) {
 				if (client->nonce) {
-					free(client->nonce);
+					idevicerestore_free(client->nonce);
 				}
 				client->nonce = nonce;
 				client->nonce_size = nonce_size;
-			} else {
-				free(nonce);
+			}
+			else {
+				idevicerestore_free(nonce);
 			}
 			if (client->mode == MODE_NORMAL) {
 				plist_t ap_params = normal_get_lockdown_value(client, NULL, "ApParameters");
@@ -1261,7 +1293,7 @@ int idevicerestore_start(struct idevicerestore_client_t* client)
 		if (client->flags & FLAG_QUIT) {
 			return -1;
 		}
-		
+
 		if (client->mode == MODE_RESTORE && client->root_ticket) {
 			plist_t ap_ticket = plist_new_data((char*)client->root_ticket, client->root_ticket_len);
 			if (!ap_ticket) {
@@ -1274,7 +1306,8 @@ int idevicerestore_start(struct idevicerestore_client_t* client)
 				return -1;
 			}
 			plist_dict_set_item(client->tss, "ApImg4Ticket", ap_ticket);
-		} else {
+		}
+		else {
 			if (get_tss_response(client, build_identity, &client->tss) < 0) {
 				logger(LL_ERROR, "Unable to get SHSH blobs for this device\n");
 				return -1;
@@ -1331,8 +1364,9 @@ int idevicerestore_start(struct idevicerestore_client_t* client)
 		if (!client->tss) {
 			logger(LL_ERROR, "could not fetch TSS record\n");
 			return -1;
-		} else {
-			char *bin = NULL;
+		}
+		else {
+			char* bin = NULL;
 			uint32_t blen = 0;
 			plist_to_bin(client->tss, &bin, &blen);
 			if (bin) {
@@ -1340,7 +1374,8 @@ int idevicerestore_start(struct idevicerestore_client_t* client)
 				if (client->cache_dir) {
 					strcpy(zfn, client->cache_dir);
 					strcat(zfn, "/shsh");
-				} else {
+				}
+				else {
 					strcpy(zfn, "shsh");
 				}
 				mkdir_with_parents(zfn, 0755);
@@ -1420,7 +1455,8 @@ int idevicerestore_start(struct idevicerestore_client_t* client)
 				plist_free(client->tss);
 			return -2;
 		}
-	} else if (client->mode == MODE_RECOVERY) {
+	}
+	else if (client->mode == MODE_RECOVERY) {
 		// device is in recovery mode
 		if ((client->build_major > 8) && !(client->flags & FLAG_CUSTOM)) {
 			if (!client->image4supported) {
@@ -1483,12 +1519,13 @@ int idevicerestore_start(struct idevicerestore_client_t* client)
 		if (!client->nonce || (nonce_size != client->nonce_size) || (memcmp(nonce, client->nonce, nonce_size) != 0)) {
 			nonce_changed = 1;
 			if (client->nonce) {
-				free(client->nonce);
+				idevicerestore_free(client->nonce);
 			}
 			client->nonce = nonce;
 			client->nonce_size = nonce_size;
-		} else {
-			free(nonce);
+		}
+		else {
+			idevicerestore_free(nonce);
 		}
 
 		if (nonce_changed && !(client->flags & FLAG_CUSTOM)) {
@@ -1582,7 +1619,7 @@ int idevicerestore_start(struct idevicerestore_client_t* client)
 
 struct idevicerestore_client_t* idevicerestore_client_new(void)
 {
-	struct idevicerestore_client_t* client = (struct idevicerestore_client_t*) malloc(sizeof(struct idevicerestore_client_t));
+	struct idevicerestore_client_t* client = (struct idevicerestore_client_t*)malloc(sizeof(struct idevicerestore_client_t));
 	if (client == NULL) {
 		logger(LL_ERROR, "Out of memory\n");
 		return NULL;
@@ -1610,19 +1647,19 @@ void idevicerestore_client_free(struct idevicerestore_client_t* client)
 	mutex_destroy(&client->device_event_mutex);
 
 	if (client->tss_url) {
-		free(client->tss_url);
+		idevicerestore_free(client->tss_url);
 	}
 	if (client->version_data) {
 		plist_free(client->version_data);
 	}
 	if (client->nonce) {
-		free(client->nonce);
+		idevicerestore_free(client->nonce);
 	}
 	if (client->udid) {
-		free(client->udid);
+		idevicerestore_free(client->udid);
 	}
 	if (client->srnm) {
-		free(client->srnm);
+		idevicerestore_free(client->srnm);
 	}
 	if (client->ipsw) {
 		ipsw_close(client->ipsw);
@@ -1631,20 +1668,20 @@ void idevicerestore_client_free(struct idevicerestore_client_t* client)
 		if (client->delete_fs) {
 			unlink(client->filesystem);
 		}
-		free(client->filesystem);
+		idevicerestore_free(client->filesystem);
 	}
-	free(client->version);
-	free(client->build);
-	free(client->device_version);
-	free(client->device_build);
+	idevicerestore_free(client->version);
+	idevicerestore_free(client->build);
+	idevicerestore_free(client->device_version);
+	idevicerestore_free(client->device_build);
 	if (client->restore_boot_args) {
-		free(client->restore_boot_args);
+		idevicerestore_free(client->restore_boot_args);
 	}
 	if (client->cache_dir) {
-		free(client->cache_dir);
+		idevicerestore_free(client->cache_dir);
 	}
 	if (client->root_ticket) {
-		free(client->root_ticket);
+		idevicerestore_free(client->root_ticket);
 	}
 	if (client->build_manifest) {
 		plist_free(client->build_manifest);
@@ -1655,8 +1692,8 @@ void idevicerestore_client_free(struct idevicerestore_client_t* client)
 	if (client->preflight_info) {
 		plist_free(client->preflight_info);
 	}
-	free(client->restore_variant);
-	free(client);
+	idevicerestore_free(client->restore_variant);
+	idevicerestore_free(client);
 }
 
 void idevicerestore_set_ecid(struct idevicerestore_client_t* client, uint64_t ecid)
@@ -1671,11 +1708,11 @@ void idevicerestore_set_udid(struct idevicerestore_client_t* client, const char*
 	if (!client)
 		return;
 	if (client->udid) {
-		free(client->udid);
+		idevicerestore_free(client->udid);
 		client->udid = NULL;
 	}
 	if (udid) {
-		client->udid = strdup(udid);
+		client->udid = _strdup(udid);
 	}
 }
 
@@ -1704,11 +1741,11 @@ void idevicerestore_set_cache_path(struct idevicerestore_client_t* client, const
 	if (!client)
 		return;
 	if (client->cache_dir) {
-		free(client->cache_dir);
+		idevicerestore_free(client->cache_dir);
 		client->cache_dir = NULL;
 	}
 	if (path) {
-		client->cache_dir = strdup(path);
+		client->cache_dir = _strdup(path);
 	}
 }
 
@@ -1805,7 +1842,8 @@ int main(int argc, char* argv[])
 
 	if (!isatty(fileno(stdin)) || !isatty(fileno(stdout))) {
 		client->flags &= ~FLAG_INTERACTIVE;
-	} else {
+	}
+	else {
 		client->flags |= FLAG_INTERACTIVE;
 	}
 
@@ -1843,23 +1881,22 @@ int main(int argc, char* argv[])
 				usage(argc, argv, 1);
 				return EXIT_FAILURE;
 			}
-			char *baseurl = NULL;
+			char* baseurl = NULL;
 			if (!strncmp(optarg, "http://", 7) && (strlen(optarg) > 7) && (optarg[7] != '/')) {
-				baseurl = optarg+7;
-			} else if (!strncmp(optarg, "https://", 8) && (strlen(optarg) > 8) && (optarg[8] != '/')) {
-				baseurl = optarg+8;
+				baseurl = optarg + 7;
+			}
+			else if (!strncmp(optarg, "https://", 8) && (strlen(optarg) > 8) && (optarg[8] != '/')) {
+				baseurl = optarg + 8;
 			}
 			if (baseurl) {
-				char *p = strchr(baseurl, '/');
-				if (!p || *(p+1) == '\0') {
+				char* p = strchr(baseurl, '/');
+				if (!p || *(p + 1) == '\0') {
 					// no path component, add default path
 					const char default_path[] = "/TSS/controller?action=2";
 					size_t usize = strlen(optarg)+sizeof(default_path);
 					char* newurl = malloc(usize);
 					snprintf(newurl, usize, "%s%s", optarg, (p) ? default_path+1 : default_path);
 					client->tss_url = newurl;
-				} else {
-					client->tss_url = strdup(optarg);
 				}
 			} else {
 				logger(LL_ERROR, "URL argument for --server is invalid, must start with http:// or https://\n");
@@ -1867,7 +1904,7 @@ int main(int argc, char* argv[])
 				return EXIT_FAILURE;
 			}
 		}
-			break;
+				break;
 
 		case 'x':
 			client->flags |= FLAG_EXCLUDE;
@@ -1897,7 +1934,7 @@ int main(int argc, char* argv[])
 				usage(argc, argv, 1);
 				return EXIT_FAILURE;
 			}
-			client->udid = strdup(optarg);
+			client->udid = _strdup(optarg);
 			break;
 
 		case 't':
@@ -1919,7 +1956,7 @@ int main(int argc, char* argv[])
 			break;
 
 		case 'C':
-			client->cache_dir = strdup(optarg);
+			client->cache_dir = _strdup(optarg);
 			break;
 
 		case 'y':
@@ -1965,8 +2002,8 @@ int main(int argc, char* argv[])
 			break;
 
 		case 2:
-			free(client->restore_variant);
-			client->restore_variant = strdup(optarg);
+			idevicerestore_free(client->restore_variant);
+			client->restore_variant = _strdup(optarg);
 			break;
 
 		case 3:
@@ -1993,12 +2030,13 @@ int main(int argc, char* argv[])
 		return (ipsw_print_info(*(argv + optind)) == 0) ? EXIT_SUCCESS : EXIT_FAILURE;
 	}
 
-	if (((argc-optind) == 1) || (client->flags & FLAG_PWN) || (client->flags & FLAG_LATEST)) {
+	if (((argc - optind) == 1) || (client->flags & FLAG_PWN) || (client->flags & FLAG_LATEST)) {
 		argc -= optind;
 		argv += optind;
 
 		ipsw = argv[0];
-	} else {
+	}
+	else {
 		usage(argc, argv, 1);
 		return EXIT_FAILURE;
 	}
@@ -2048,7 +2086,7 @@ int main(int argc, char* argv[])
 }
 #endif
 
-irecv_device_t get_irecv_device(struct idevicerestore_client_t *client)
+irecv_device_t get_irecv_device(struct idevicerestore_client_t* client)
 {
 	int mode = _MODE_UNKNOWN;
 
@@ -2192,7 +2230,7 @@ int get_sep_nonce(struct idevicerestore_client_t* client, unsigned char** nonce,
 	return 0;
 }
 
-plist_t build_manifest_get_build_identity_for_model_with_variant(plist_t build_manifest, const char *hardware_model, const char *variant, int exact)
+plist_t build_manifest_get_build_identity_for_model_with_variant(plist_t build_manifest, const char* hardware_model, const char* variant, int exact)
 {
 	plist_t build_identities_array = plist_dict_get_item(build_manifest, "BuildIdentities");
 	if (!build_identities_array || plist_get_node_type(build_identities_array) != PLIST_ARRAY) {
@@ -2214,7 +2252,7 @@ plist_t build_manifest_get_build_identity_for_model_with_variant(plist_t build_m
 		if (!devclass || plist_get_node_type(devclass) != PLIST_STRING) {
 			continue;
 		}
-		const char *str = plist_get_string_ptr(devclass, NULL);
+		const char* str = plist_get_string_ptr(devclass, NULL);
 		if (strcasecmp(str, hardware_model) != 0) {
 			continue;
 		}
@@ -2230,10 +2268,12 @@ plist_t build_manifest_get_build_identity_for_model_with_variant(plist_t build_m
 					return ident;
 				}
 				continue;
-			} else {
+			}
+			else {
 				return ident;
 			}
-		} else {
+		}
+		else {
 			return ident;
 		}
 	}
@@ -2241,7 +2281,7 @@ plist_t build_manifest_get_build_identity_for_model_with_variant(plist_t build_m
 	return NULL;
 }
 
-plist_t build_manifest_get_build_identity_for_model(plist_t build_manifest, const char *hardware_model)
+plist_t build_manifest_get_build_identity_for_model(plist_t build_manifest, const char* hardware_model)
 {
 	return build_manifest_get_build_identity_for_model_with_variant(build_manifest, hardware_model, NULL, 0);
 }
@@ -2324,8 +2364,8 @@ int get_tss_response(struct idevicerestore_client_t* client, plist_t build_ident
 			} else {
 				snprintf(zfn, sizeof(zfn), "shsh/%" PRIu64 "-%s-%s.shsh", client->ecid, client->device->product_type, client->version);
 			}
-			struct stat fst;
-			if (stat(zfn, &fst) == 0) {
+			struct _stat64 fst;
+			if (_stat64(zfn, &fst) == 0) {
 				gzFile zf = gzopen(zfn, "rb");
 				if (zf) {
 					int blen = 0;
@@ -2354,11 +2394,12 @@ int get_tss_response(struct idevicerestore_client_t* client, plist_t build_ident
 					if (blen > 0) {
 						if (memcmp(bin, "bplist00", 8) == 0) {
 							plist_from_bin(bin, blen, tss);
-						} else {
+						}
+						else {
 							plist_from_xml(bin, blen, tss);
 						}
 					}
-					free(bin);
+					idevicerestore_free(bin);
 				}
 			} else {
 				logger(LL_ERROR, "no local file %s\n", zfn);
@@ -2398,7 +2439,8 @@ int get_tss_response(struct idevicerestore_client_t* client, plist_t build_ident
 	if (client->image4supported) {
 		plist_dict_set_item(parameters, "ApSecurityMode", plist_new_bool(1));
 		plist_dict_set_item(parameters, "ApSupportsImg4", plist_new_bool(1));
-	} else {
+	}
+	else {
 		plist_dict_set_item(parameters, "ApSupportsImg4", plist_new_bool(0));
 	}
 
@@ -2436,7 +2478,8 @@ int get_tss_response(struct idevicerestore_client_t* client, plist_t build_ident
 			plist_free(parameters);
 			return -1;
 		}
-	} else {
+	}
+	else {
 		/* add personalized parameters */
 		if (tss_request_add_ap_img3_tags(request, parameters) < 0) {
 			logger(LL_ERROR, "Unable to add img3 tags to TSS request\n");
@@ -2522,7 +2565,7 @@ int get_recoveryos_root_ticket_tss_response(struct idevicerestore_client_t* clie
 	/* ApSepNonce */
 	if (sep_nonce) {
 		plist_dict_set_item(parameters, "ApSepNonce", plist_new_data((const char*)sep_nonce, sep_nonce_size));
-		free(sep_nonce);
+		idevicerestore_free(sep_nonce);
 	}
 
 	/* ApProductionMode */
@@ -2532,7 +2575,8 @@ int get_recoveryos_root_ticket_tss_response(struct idevicerestore_client_t* clie
 	if (client->image4supported) {
 		plist_dict_set_item(parameters, "ApSecurityMode", plist_new_bool(1));
 		plist_dict_set_item(parameters, "ApSupportsImg4", plist_new_bool(1));
-	} else {
+	}
+	else {
 		plist_dict_set_item(parameters, "ApSupportsImg4", plist_new_bool(0));
 	}
 
@@ -2594,10 +2638,10 @@ int get_recoveryos_root_ticket_tss_response(struct idevicerestore_client_t* clie
 }
 
 int get_recovery_os_local_policy_tss_response(
-				struct idevicerestore_client_t* client,
-				plist_t build_identity,
-				plist_t* tss,
-				plist_t args)
+	struct idevicerestore_client_t* client,
+	plist_t build_identity,
+	plist_t* tss,
+	plist_t args)
 {
 	plist_t request = NULL;
 	plist_t response = NULL;
@@ -2612,7 +2656,8 @@ int get_recovery_os_local_policy_tss_response(
 	if (client->image4supported) {
 		plist_dict_set_item(parameters, "ApSecurityMode", plist_new_bool(1));
 		plist_dict_set_item(parameters, "ApSupportsImg4", plist_new_bool(1));
-	} else {
+	}
+	else {
 		plist_dict_set_item(parameters, "ApSupportsImg4", plist_new_bool(0));
 	}
 
@@ -2639,7 +2684,7 @@ int get_recovery_os_local_policy_tss_response(
 		free(vol_uuid_str);
 		return -1;
 	}
-	free(vol_uuid_str);
+	idevicerestore_free(vol_uuid_str);
 	int i;
 	for (i = 0; i < 16; i++) {
 		vol_uuid[i] = (unsigned char)vuuid[i];
@@ -2700,14 +2745,15 @@ int get_local_policy_tss_response(struct idevicerestore_client_t* client, plist_
 
 	if (sep_nonce) {
 		plist_dict_set_item(parameters, "ApSepNonce", plist_new_data((const char*)sep_nonce, sep_nonce_size));
-		free(sep_nonce);
+		idevicerestore_free(sep_nonce);
 	}
 
 	plist_dict_set_item(parameters, "ApProductionMode", plist_new_bool(1));
 	if (client->image4supported) {
 		plist_dict_set_item(parameters, "ApSecurityMode", plist_new_bool(1));
 		plist_dict_set_item(parameters, "ApSupportsImg4", plist_new_bool(1));
-	} else {
+	}
+	else {
 		plist_dict_set_item(parameters, "ApSupportsImg4", plist_new_bool(0));
 	}
 
@@ -2818,7 +2864,7 @@ int extract_component(ipsw_archive_t ipsw, const char* path, void** component_da
 	if (component_name != NULL)
 		component_name++;
 	else
-		component_name = (char*) path;
+		component_name = (char*)path;
 
 	logger(LL_INFO, "Extracting %s (%s)...\n", component_name, path);
 	if (ipsw_extract_to_memory(ipsw, path, component_data, component_size) < 0) {
@@ -2859,7 +2905,7 @@ int personalize_component(struct idevicerestore_client_t* client, const char *co
 			}
 		}
 	}
-	free(component_blob);
+	idevicerestore_free(component_blob);
 
 	if (client->flags & FLAG_KEEP_PERS) {
 		write_file(component_name, stitched_component, stitched_component_size);
@@ -2885,11 +2931,11 @@ int build_manifest_check_compatibility(plist_t build_manifest, const char* produ
 	for (i = 0; i < pc; i++) {
 		plist_t prod = plist_array_get_item(node, i);
 		if (plist_get_node_type(prod) == PLIST_STRING) {
-			char *val = NULL;
+			char* val = NULL;
 			plist_get_string_val(prod, &val);
 			if (val && (strcmp(val, product) == 0)) {
 				res = 0;
-				free(val);
+				idevicerestore_free(val);
 				break;
 			}
 		}
@@ -2948,7 +2994,7 @@ void build_identity_print_information(plist_t build_identity)
 	else
 		logger(LL_INFO, "Unknown Variant '%s'\n", value);
 
-	free(value);
+	idevicerestore_free(value);
 
 	info_node = NULL;
 	node = NULL;
@@ -2964,7 +3010,7 @@ int build_identity_check_components_in_ipsw(plist_t build_identity, ipsw_archive
 	plist_dict_iter iter = NULL;
 	plist_dict_new_iter(manifest_node, &iter);
 	plist_t node = NULL;
-	char *key = NULL;
+	char* key = NULL;
 	do {
 		node = NULL;
 		key = NULL;
@@ -2972,18 +3018,18 @@ int build_identity_check_components_in_ipsw(plist_t build_identity, ipsw_archive
 		if (key && node) {
 			plist_t path = plist_access_path(node, 2, "Info", "Path");
 			if (path) {
-				char *comp_path = NULL;
+				char* comp_path = NULL;
 				plist_get_string_val(path, &comp_path);
 				if (comp_path) {
 					if (!ipsw_file_exists(ipsw, comp_path)) {
 						logger(LL_ERROR, "%s file %s not found in IPSW\n", key, comp_path);
 						res = -1;
 					}
-					free(comp_path);
+					idevicerestore_free(comp_path);
 				}
 			}
 		}
-		free(key);
+		idevicerestore_free(key);
 	} while (node);
 	return res;
 }
@@ -3011,7 +3057,7 @@ int build_identity_get_component_path(plist_t build_identity, const char* compon
 	if (!manifest_node || plist_get_node_type(manifest_node) != PLIST_DICT) {
 		logger(LL_ERROR, "Unable to find manifest node\n");
 		if (filename)
-			free(filename);
+			idevicerestore_free(filename);
 		return -1;
 	}
 
@@ -3019,7 +3065,7 @@ int build_identity_get_component_path(plist_t build_identity, const char* compon
 	if (!component_node || plist_get_node_type(component_node) != PLIST_DICT) {
 		logger(LL_ERROR, "Unable to find component node for %s\n", component);
 		if (filename)
-			free(filename);
+			idevicerestore_free(filename);
 		return -1;
 	}
 
@@ -3027,7 +3073,7 @@ int build_identity_get_component_path(plist_t build_identity, const char* compon
 	if (!component_info_node || plist_get_node_type(component_info_node) != PLIST_DICT) {
 		logger(LL_ERROR, "Unable to find component info node for %s\n", component);
 		if (filename)
-			free(filename);
+			idevicerestore_free(filename);
 		return -1;
 	}
 
@@ -3035,7 +3081,7 @@ int build_identity_get_component_path(plist_t build_identity, const char* compon
 	if (!component_info_path_node || plist_get_node_type(component_info_path_node) != PLIST_STRING) {
 		logger(LL_ERROR, "Unable to find component info path node for %s\n", component);
 		if (filename)
-			free(filename);
+			idevicerestore_free(filename);
 		return -1;
 	}
 	plist_get_string_val(component_info_path_node, &filename);
@@ -3047,9 +3093,9 @@ int build_identity_get_component_path(plist_t build_identity, const char* compon
 const char* get_component_name(const char* filename)
 {
 	struct filename_component_map {
-		const char *fnprefix;
+		const char* fnprefix;
 		int matchlen;
-		const char *compname;
+		const char* compname;
 	};
 	struct filename_component_map fn_comp_map[] = {
 		{ "LLB", 3, "LLB" },

@@ -1,0 +1,144 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="源文件">
+      <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
+      <Extensions>cpp;c;cc;cxx;c++;cppm;ixx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
+    </Filter>
+    <Filter Include="头文件">
+      <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
+      <Extensions>h;hh;hpp;hxx;h++;hm;inl;inc;ipp;xsd</Extensions>
+    </Filter>
+    <Filter Include="资源文件">
+      <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
+      <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="src\ace3.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="src\asr.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="src\common.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="src\dfu.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="src\download.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="src\endianness.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="src\fdr.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="src\fls.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="src\ftab.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="src\idevicerestore.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="src\img3.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="src\img4.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="src\ipsw.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="src\limera1n.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="src\limera1n_payload.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="src\locking.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="src\mbn.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="src\normal.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="src\recovery.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="src\restore.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="src\config.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="src\getopt.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="src\ace3.c">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="src\asr.c">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="src\common.c">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="src\dfu.c">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="src\download.c">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="src\fdr.c">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="src\fls.c">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="src\ftab.c">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="src\idevicerestore.c">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="src\img3.c">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="src\img4.c">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="src\ipsw.c">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="src\limera1n.c">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="src\locking.c">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="src\mbn.c">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="src\normal.c">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="src\recovery.c">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="src\restore.c">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="src\getopt.c">
+      <Filter>源文件</Filter>
+    </ClCompile>
+  </ItemGroup>
+</Project>

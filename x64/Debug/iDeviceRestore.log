@@ -1,0 +1,51 @@
+﻿  ace3.c
+C:\Users\xiong\source\repos\iDeviceRestore\iDeviceRestore\src\ace3.c(25,10): error C1083: 无法打开包括文件: “libimobiledevice-glue/nskeyedarchive.h”: No such file or directory
+  asr.c
+C:\Users\xiong\source\repos\iDeviceRestore\iDeviceRestore\src\asr.c(30,10): error C1083: 无法打开包括文件: “unistd.h”: No such file or directory
+  common.c
+C:\Users\xiong\source\repos\iDeviceRestore\iDeviceRestore\src\common.c(35,10): error C1083: 无法打开包括文件: “unistd.h”: No such file or directory
+  dfu.c
+C:\Users\xiong\source\repos\iDeviceRestore\iDeviceRestore\src\dfu.c(27,10): error C1083: 无法打开包括文件: “unistd.h”: No such file or directory
+  download.c
+C:\Users\xiong\source\repos\iDeviceRestore\iDeviceRestore\src\download.c(26,10): error C1083: 无法打开包括文件: “curl/curl.h”: No such file or directory
+  fdr.c
+C:\Users\xiong\source\repos\iDeviceRestore\iDeviceRestore\src\fdr.c(29,10): error C1083: 无法打开包括文件: “unistd.h”: No such file or directory
+  fls.c
+C:\Users\xiong\source\repos\iDeviceRestore\iDeviceRestore\src\common.h(36,10): error C1083: 无法打开包括文件: “unistd.h”: No such file or directory
+  (编译源文件“src/fls.c”)
+  
+  ftab.c
+C:\Users\xiong\source\repos\iDeviceRestore\iDeviceRestore\src\common.h(36,10): error C1083: 无法打开包括文件: “unistd.h”: No such file or directory
+  (编译源文件“src/ftab.c”)
+  
+  getopt.c
+  idevicerestore.c
+C:\Users\xiong\source\repos\iDeviceRestore\iDeviceRestore\src\idevicerestore.c(36,10): error C1083: 无法打开包括文件: “unistd.h”: No such file or directory
+  img3.c
+C:\Users\xiong\source\repos\iDeviceRestore\iDeviceRestore\src\common.h(36,10): error C1083: 无法打开包括文件: “unistd.h”: No such file or directory
+  (编译源文件“src/img3.c”)
+  
+  img4.c
+C:\Users\xiong\source\repos\iDeviceRestore\iDeviceRestore\src\img4.c(25,10): error C1083: 无法打开包括文件: “libtatsu/tss.h”: No such file or directory
+  ipsw.c
+C:\Users\xiong\source\repos\iDeviceRestore\iDeviceRestore\src\ipsw.c(34,10): error C1083: 无法打开包括文件: “unistd.h”: No such file or directory
+  limera1n.c
+C:\Users\xiong\source\repos\iDeviceRestore\iDeviceRestore\src\limera1n.c(27,10): error C1083: 无法打开包括文件: “libirecovery.h”: No such file or directory
+  locking.c
+C:\Users\xiong\source\repos\iDeviceRestore\iDeviceRestore\src\locking.h(36,15): error C2079: “ldata”使用未定义的 struct“flock”
+  (编译源文件“src/locking.c”)
+  
+C:\Users\xiong\source\repos\iDeviceRestore\iDeviceRestore\src\common.h(36,10): error C1083: 无法打开包括文件: “unistd.h”: No such file or directory
+  (编译源文件“src/locking.c”)
+  
+  mbn.c
+C:\Users\xiong\source\repos\iDeviceRestore\iDeviceRestore\src\common.h(36,10): error C1083: 无法打开包括文件: “unistd.h”: No such file or directory
+  (编译源文件“src/mbn.c”)
+  
+  normal.c
+C:\Users\xiong\source\repos\iDeviceRestore\iDeviceRestore\src\normal.c(27,10): error C1083: 无法打开包括文件: “unistd.h”: No such file or directory
+  recovery.c
+C:\Users\xiong\source\repos\iDeviceRestore\iDeviceRestore\src\recovery.c(27,10): error C1083: 无法打开包括文件: “unistd.h”: No such file or directory
+  restore.c
+C:\Users\xiong\source\repos\iDeviceRestore\iDeviceRestore\src\restore.c(34,10): error C1083: 无法打开包括文件: “unistd.h”: No such file or directory
+  正在生成代码...

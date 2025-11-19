@@ -1,4 +1,4 @@
-/*
+﻿/*
  * normal.h
  * Functions for handling idevices in normal mode
  *
@@ -34,7 +34,10 @@
 #include "common.h"
 #include "normal.h"
 #include "recovery.h"
+static void idevicerestore_free(void* buffer)
+{
 
+}
 static int normal_idevice_new(struct idevicerestore_client_t* client, idevice_t* device)
 {
 	int num_devices = 0;
@@ -63,10 +66,10 @@ static int normal_idevice_new(struct idevicerestore_client_t* client, idevice_t*
 			return -1;
 		}
 		if (strcmp(type, "com.apple.mobile.lockdown") != 0) {
-			free(type);
+			idevicerestore_free(type);
 			return -1;
 		}
-		free(type);
+		idevicerestore_free(type);
 		if (lockdownd_get_value(lockdown, NULL, "UniqueChipID", &node) == LOCKDOWN_E_SUCCESS) {
 			plist_get_uint_val(node, &client->ecid);
 			plist_free(node);
@@ -108,10 +111,10 @@ static int normal_idevice_new(struct idevicerestore_client_t* client, idevice_t*
 			continue;
 		}
 		if (strcmp(type, "com.apple.mobile.lockdown") != 0) {
-			free(type);
+			idevicerestore_free(type);
 			continue;
 		}
-		free(type);
+		idevicerestore_free(type);
 
 		node = NULL;
 		if ((lockdownd_get_value(lockdown, NULL, "UniqueChipID", &node) != LOCKDOWN_E_SUCCESS) || !node || (plist_get_node_type(node) != PLIST_UINT)){
@@ -134,7 +137,7 @@ static int normal_idevice_new(struct idevicerestore_client_t* client, idevice_t*
 		} else {
 			client->ecid = this_ecid;
 		}
-		client->udid = strdup(devices[j]);
+		client->udid = _strdup(devices[j]);
 		*device = dev;
 		break;
 	}
@@ -198,7 +201,7 @@ irecv_device_t normal_get_irecv_device(struct idevicerestore_client_t* client)
 		plist_get_string_val(pval, &strval);
 		if (strval) {
 			irecv_devices_get_device_by_hardware_model(strval, &irecv_device);
-			free(strval);
+			idevicerestore_free(strval);
 		}
 	}
 	plist_free(pval);
@@ -614,8 +617,13 @@ int normal_handle_commit_stashbag(struct idevicerestore_client_t* client, plist_
 			if (node) {
 				plist_get_string_val(node, &strval);
 			}
+<<<<<<< Updated upstream
 			logger(LL_ERROR, "Could not commit stashbag: %s\n", (strval) ? strval : "(Unknown error)");
 			free(strval);
+=======
+			error("ERROR: Could not commit stashbag: %s\n", (strval) ? strval : "(Unknown error)");
+			idevicerestore_free(strval);
+>>>>>>> Stashed changes
 		} else if (plist_dict_get_bool(pl, "StashbagCommitComplete")) {
 			logger(LL_INFO, "Stashbag committed!\n");
 			result = 0;

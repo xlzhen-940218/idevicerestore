@@ -1,4 +1,4 @@
-/*
+﻿/*
  * download.c
  * file download helper functions
  *
@@ -19,6 +19,7 @@
  * License along with this library; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
  */
+#include "config.h"
 #include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
@@ -66,8 +67,11 @@ int download_to_buffer(const char* url, void** buf, size_t* length)
 	curl_easy_setopt(handle, CURLOPT_WRITEFUNCTION, (curl_write_callback)&download_write_buffer_callback);
 	curl_easy_setopt(handle, CURLOPT_WRITEDATA, &response);
 	if (strncmp(url, "https://api.ipsw.me/", 20) == 0) {
-		curl_easy_setopt(handle, CURLOPT_USERAGENT, USER_AGENT_STRING " idevicerestore/" PACKAGE_VERSION);
-	} else {
+		const char agent_version[512];
+		sprintf(agent_version, "%s idevicerestore/%s", USER_AGENT_STRING, PACKAGE_VERSION);
+		curl_easy_setopt(handle, CURLOPT_USERAGENT, agent_version);
+	}
+	else {
 		curl_easy_setopt(handle, CURLOPT_USERAGENT, USER_AGENT_STRING);
 	}
 	curl_easy_setopt(handle, CURLOPT_FOLLOWLOCATION, 1);
@@ -79,7 +83,8 @@ int download_to_buffer(const char* url, void** buf, size_t* length)
 	if (response.length > 0) {
 		*length = response.length;
 		*buf = response.content;
-	} else {
+	}
+	else {
 		res = -1;
 	}
 
@@ -101,6 +106,12 @@ static int download_progress(void *clientp, double dltotal, double dlnow, double
 	}
 
 	return 0;
+}
+
+size_t curl_write_function_callback(void* data, size_t size, size_t nmemb, void* userp)
+{
+	FILE* fp = userp;
+	return fwrite(data, size, nmemb, fp);
 }
 
 int download_to_file(const char* url, const char* filename, int enable_progress)
@@ -125,6 +136,8 @@ int download_to_file(const char* url, const char* filename, int enable_progress)
 	curl_easy_setopt(handle, CURLOPT_SSL_VERIFYPEER, 0);
 
 	curl_easy_setopt(handle, CURLOPT_WRITEFUNCTION, NULL);
+
+	curl_easy_setopt(handle, CURLOPT_WRITEFUNCTION, &curl_write_function_callback);
 	curl_easy_setopt(handle, CURLOPT_WRITEDATA, f);
 
 	if (enable_progress > 0) {
@@ -136,7 +149,7 @@ int download_to_file(const char* url, const char* filename, int enable_progress)
 #endif
 	}
 
-	curl_easy_setopt(handle, CURLOPT_NOPROGRESS, enable_progress > 0 ? 0: 1);
+	curl_easy_setopt(handle, CURLOPT_NOPROGRESS, enable_progress > 0 ? 0 : 1);
 	curl_easy_setopt(handle, CURLOPT_USERAGENT, USER_AGENT_STRING);
 	curl_easy_setopt(handle, CURLOPT_FOLLOWLOCATION, 1);
 	curl_easy_setopt(handle, CURLOPT_URL, url);

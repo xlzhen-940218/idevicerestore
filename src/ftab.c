@@ -1,4 +1,4 @@
-/*
+﻿/*
  * ftab.c
  * Functions for handling the ftab format
  *
@@ -27,6 +27,8 @@
 #include "ftab.h"
 #include "common.h"
 #include "endianness.h"
+static void idevicerestore_free(void* buffer)
+{
 
 int ftab_parse(const void *data, size_t data_size, ftab_t *ftab, uint32_t *tag)
 {
@@ -188,10 +190,10 @@ int ftab_free(ftab_t ftab)
 	if (!ftab) return -1;
 	uint32_t i = 0;
 	for (i = 0; i < ftab->header.num_entries; i++) {
-		free(ftab->storage[i]);
+		idevicerestore_free(ftab->storage[i]);
 	}
-	free(ftab->storage);
-	free(ftab->entries);
-	free(ftab);
+	idevicerestore_free(ftab->storage);
+	idevicerestore_free(ftab->entries);
+	idevicerestore_free(ftab);
 	return 0;
 }

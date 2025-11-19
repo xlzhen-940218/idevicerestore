@@ -1,4 +1,4 @@
-/*
+﻿/*
  * locking.h
  * locking extras header file
  *

@@ -1,4 +1,4 @@
-/*
+﻿/*
  * img4.c
  * Functions for handling the IMG4 format
  *
@@ -41,7 +41,10 @@
 
 #define IMG4_MAGIC "IMG4"
 #define IMG4_MAGIC_SIZE 4
+static void idevicerestore_free(void* buffer)
+{
 
+}
 static int asn1_calc_int_size(uint64_t value)
 {
 	int i = 1;
@@ -669,7 +672,7 @@ int img4_stitch_component(const char* component_name, const void* component_data
 		p += im4rlen;
 		additional_size = (unsigned int)(p - additional_data);
 
-		free(im4rset);
+		idevicerestore_free(im4rset);
 	}
 
 	// create element header for the "IMG4" magic
@@ -686,13 +689,13 @@ int img4_stitch_component(const char* component_name, const void* component_data
 	outbuf = (unsigned char*)malloc(img4header_size + content_size);
 	if (!outbuf) {
 		if (magic_header) {
-			free(magic_header);
+			idevicerestore_free(magic_header);
 		}
 		if (blob_header) {
-			free(blob_header);
+			idevicerestore_free(blob_header);
 		}
 		if (img4header) {
-			free(img4header);
+			idevicerestore_free(img4header);
 		}
 		free(additional_data);
 		logger(LL_ERROR, "out of memory when personalizing IMG4 component %s\n", component_name);
@@ -722,15 +725,15 @@ int img4_stitch_component(const char* component_name, const void* component_data
 	*img4_size = (p - outbuf);
 
 	if (magic_header) {
-		free(magic_header);
+		idevicerestore_free(magic_header);
 	}
 	if (blob_header) {
-		free(blob_header);
+		idevicerestore_free(blob_header);
 	}
 	if (img4header) {
-		free(img4header);
+		idevicerestore_free(img4header);
 	}
-	free(additional_data);
+	idevicerestore_free(additional_data);
 
 	return 0;
 }
@@ -937,9 +940,9 @@ int img4_create_local_manifest(plist_t request, plist_t build_identity, plist_t*
 				_manifest_write_component(&p, &length, comp, val);
 			}
 		}
-		free(key);
+		idevicerestore_free(key);
 	} while (val);
-	free(iter);
+	idevicerestore_free(iter);
 
 	/* write manifest body header */
 	unsigned char manb_[32];
@@ -995,7 +998,7 @@ int img4_create_local_manifest(plist_t request, plist_t build_identity, plist_t*
 
 	*manifest = plist_new_data((char*)buf, length);
 
-	free(buf);
+	idevicerestore_free(buf);
 
 	return 0;
 }

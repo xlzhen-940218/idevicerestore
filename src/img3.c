@@ -1,4 +1,4 @@
-/*
+﻿/*
  * img3.c
  * Functions for handling with Apple's IMG3 format
  *
@@ -28,7 +28,10 @@
 #include "img3.h"
 #include "common.h"
 #include "idevicerestore.h"
+static void idevicerestore_free(void* buffer)
+{
 
+}
 static void img3_free(img3_file* image);
 static img3_element* img3_parse_element(const unsigned char* data);
 static void img3_free_element(img3_element* element);
@@ -225,7 +228,7 @@ static img3_element* img3_parse_element(const unsigned char* data) {
 static void img3_free(img3_file* image) {
 	if (image != NULL) {
 		if (image->header != NULL) {
-			free(image->header);
+			idevicerestore_free(image->header);
 		}
 
 		int i;
@@ -233,7 +236,7 @@ static void img3_free(img3_file* image) {
 			img3_free_element(image->elements[i]);
 			image->elements[i] = NULL;
 		}
-		free(image);
+		idevicerestore_free(image);
 		image = NULL;
 	}
 }
@@ -241,10 +244,10 @@ static void img3_free(img3_file* image) {
 static void img3_free_element(img3_element* element) {
 	if (element != NULL) {
 		if (element->data != NULL) {
-			free(element->data);
+			idevicerestore_free(element->data);
 			element->data = NULL;
 		}
-		free(element);
+		idevicerestore_free(element);
 		element = NULL;
 	}
 }

@@ -1,4 +1,4 @@
-/*
+﻿/*
  * ipsw.h
  * Definitions for IPSW utilities
  *

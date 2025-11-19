@@ -1,4 +1,4 @@
-/*
+﻿/*
  * idevicerestore.h
  * Restore device firmware and filesystem
  *
@@ -24,9 +24,12 @@
 #ifndef IDEVICERESTORE_H
 #define IDEVICERESTORE_H
 
+
+
 #ifdef __cplusplus
 extern "C" {
 #endif
+
 
 #include <stdio.h>
 #include <stdint.h>

@@ -1,4 +1,4 @@
-/*
+﻿/*
  * common.h
  * Misc functions used in idevicerestore
  *
@@ -29,7 +29,7 @@ extern "C" {
 #endif
 
 #ifdef HAVE_CONFIG_H
-#include <config.h>
+#include "config.h"
 #endif
 
 #include <inttypes.h>

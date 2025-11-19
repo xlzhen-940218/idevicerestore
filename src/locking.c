@@ -1,4 +1,4 @@
-/*
+﻿/*
  * locking.c
  * locking extras
  *
@@ -33,7 +33,10 @@ int lock_file(const char* filename, lock_info_t* lockinfo)
 		return -1;
 	}
 #ifdef WIN32
-	lockinfo->fp = CreateFile(filename, GENERIC_READ | GENERIC_WRITE, FILE_SHARE_READ | FILE_SHARE_WRITE, NULL, OPEN_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
+	size_t filename_length = strlen(filename) + 10;
+	LPCWSTR w_filename = malloc(filename_length);
+	mbstowcs(w_filename, filename, filename_length);
+	lockinfo->fp = CreateFile(w_filename, GENERIC_READ | GENERIC_WRITE, FILE_SHARE_READ | FILE_SHARE_WRITE, NULL, OPEN_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
 	if (lockinfo->fp == INVALID_HANDLE_VALUE) {
 		logger(LL_DEBUG, "ERROR: could not open or create lockfile '%s'\n", filename);
 		return -1;

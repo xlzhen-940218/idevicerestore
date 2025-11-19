@@ -1,4 +1,4 @@
-/*
+﻿/*
  * fdr.c
  * Connection proxy service used by FDR
  *
@@ -33,7 +33,7 @@
 #include "common.h"
 #include "idevicerestore.h"
 #include "fdr.h"
-#include <endianness.h> /* from libimobiledevice */
+#include "endianness.h" /* from libimobiledevice */
 
 #define CTRL_PORT 0x43a /*1082*/
 #define CTRLCMD  "BeginCtrl"
@@ -55,7 +55,10 @@ static int fdr_sync_handshake(fdr_client_t fdr);
 static int fdr_handle_sync_cmd(fdr_client_t fdr);
 static int fdr_handle_plist_cmd(fdr_client_t fdr);
 static int fdr_handle_proxy_cmd(fdr_client_t fdr);
+static void idevicerestore_free(void* buffer)
+{
 
+}
 int fdr_connect(idevice_t device, fdr_type_t type, fdr_client_t* fdr)
 {
 	int res = -1, i = 0;
@@ -127,7 +130,7 @@ void fdr_free(fdr_client_t fdr)
 
 	fdr_disconnect(fdr);
 
-	free(fdr);
+	idevicerestore_free(fdr);
 	fdr = NULL;
 }
 
@@ -221,7 +224,7 @@ static int fdr_receive_plist(fdr_client_t fdr, plist_t* data)
 		return -1;
 	}
 	plist_from_bin(buf, bytes, data);
-	free(buf);
+	idevicerestore_free(buf);
 
 	logger(LL_DEBUG, "FDR Received %d bytes\n", bytes);
 
@@ -247,11 +250,11 @@ static int fdr_send_plist(fdr_client_t fdr, plist_t data)
 	if (device_error != IDEVICE_E_SUCCESS || bytes != sizeof(len)) {
 		logger(LL_ERROR, "FDR unable to send data length. (%d) Sent %u of %u bytes.\n",
 		      device_error, bytes, (uint32_t)sizeof(len));
-		free(buf);
+		idevicerestore_free(buf);
 		return -1;
 	}
 	device_error = idevice_connection_send(fdr->connection, buf, len, &bytes);
-	free(buf);
+	idevicerestore_free(buf);
 	if (device_error != IDEVICE_E_SUCCESS || bytes != len) {
 		logger(LL_ERROR, "FDR unable to send data (%d). Sent %u of %u bytes.\n",
 		      device_error, bytes, len);
@@ -375,15 +378,15 @@ static int fdr_sync_handshake(fdr_client_t fdr)
 
 		if (!cmd || (strcmp(cmd, "HelloConn") != 0)) {
 			if (cmd) {
-				free(cmd);
+				idevicerestore_free(cmd);
 			}
 			if (identifier) {
-				free(identifier);
+				idevicerestore_free(identifier);
 			}
 			logger(LL_ERROR, "Did not receive HelloConn reply...\n");
 			return -1;
 		}
-		free(cmd);
+		idevicerestore_free(cmd);
 
 		if (identifier) {
 			logger(LL_DEBUG, "Got device identifier %s\n", identifier);
@@ -477,7 +480,7 @@ static int fdr_handle_plist_cmd(fdr_client_t fdr)
 		return -1;
 	}
 
-	free(command);
+	idevicerestore_free(command);
 	/* FDR connection will be terminated remotely. Next receive will get nothing, error and terminate this worker thread. */
 	return 0;
 }
@@ -542,13 +545,13 @@ static int fdr_handle_proxy_cmd(fdr_client_t fdr)
 
 	if (!host || !buf[2]) {
 		/* missing or zero length host name */
-		free(buf);
+		idevicerestore_free(buf);
 		return 0;
 	}
 
 	/* else wait for messages and forward them */
 	int sockfd = socket_connect(host, port);
-	free(host);
+	idevicerestore_free(host);
 	if (sockfd < 0) {
 		free(buf);
 		logger(LL_ERROR, "Failed to connect socket: %s\n", strerror(errno));
@@ -624,6 +627,6 @@ static int fdr_handle_proxy_cmd(fdr_client_t fdr)
 		} else serial++;
 	}
 	socket_close(sockfd);
-	free(buf);
+	idevicerestore_free(buf);
 	return res;
 }

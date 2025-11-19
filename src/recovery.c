@@ -1,4 +1,4 @@
-/*
+﻿/*
  * recovery.c
  * Functions for handling idevices in recovery mode
  *
@@ -35,7 +35,10 @@
 #include "img3.h"
 #include "restore.h"
 #include "recovery.h"
+static void idevicerestore_free(void* buffer)
+{
 
+}
 static int recovery_progress_callback(irecv_client_t client, const irecv_event_t* event)
 {
 	if (event->type == IRECV_PROGRESS) {
@@ -53,7 +56,7 @@ void recovery_client_free(struct idevicerestore_client_t* client)
 				irecv_close(client->recovery->client);
 				client->recovery->client = NULL;
 			}
-			free(client->recovery);
+			idevicerestore_free(client->recovery);
 			client->recovery = NULL;
 		}
 	}
@@ -262,7 +265,7 @@ int recovery_send_ticket(struct idevicerestore_client_t* client)
 
 	logger(LL_INFO, "Sending APTicket (%d bytes)\n", size);
 	irecv_error_t err = irecv_send_buffer(client->recovery->client, data, size, 0);
-	free(data);
+	idevicerestore_free(data);
 	if (err != IRECV_E_SUCCESS) {
 		logger(LL_ERROR, "Unable to send APTicket: %s\n", irecv_strerror(err));
 		return -1;
@@ -300,7 +303,7 @@ int recovery_send_component(struct idevicerestore_client_t* client, plist_t buil
 	void* component_data = NULL;
 	size_t component_size = 0;
 	int ret = extract_component(client->ipsw, path, &component_data, &component_size);
-	free(path);
+	idevicerestore_free(path);
 	if (ret < 0) {
 		logger(LL_ERROR, "Unable to extract component: %s\n", component);
 		return -1;
@@ -449,9 +452,9 @@ int recovery_send_loaded_by_iboot(struct idevicerestore_client_t* client, plist_
 				}
 			}
 		}
-		free(key);
+		idevicerestore_free(key);
 	}
-	free(iter);
+	idevicerestore_free(iter);
 
 	return (err) ? -1 : 0;
 }

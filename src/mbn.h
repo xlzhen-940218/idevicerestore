@@ -1,4 +1,4 @@
-/*
+﻿/*
  * mbn.h
  * support for Qualcomm MBN (Modem Binary) formats
  *

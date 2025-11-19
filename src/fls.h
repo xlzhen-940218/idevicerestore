@@ -1,4 +1,4 @@
-/*
+﻿/*
  * fls.h
  * support for .fls file format (found in .bbfw files)
  *
@@ -22,6 +22,8 @@
 #define FLS_H
 
 #include <stdint.h>
+
+#define __attribute__(X)
 
 struct _fls_element {
 	uint32_t type;
