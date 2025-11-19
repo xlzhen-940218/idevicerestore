@@ -454,7 +454,7 @@ int idevicerestore_start(struct idevicerestore_client_t* client)
 			}
 			if (!s_wtfurl) {
 				logger(LL_INFO, "Using hardcoded x12220000_5_Recovery.ipsw URL\n");
-				s_wtfurl = strdup("http://appldnld.apple.com.edgesuite.net/content.info.apple.com/iPhone/061-6618.20090617.Xse7Y/x12220000_5_Recovery.ipsw");
+				s_wtfurl = _strdup("http://appldnld.apple.com.edgesuite.net/content.info.apple.com/iPhone/061-6618.20090617.Xse7Y/x12220000_5_Recovery.ipsw");
 			}
 
 			// make a local file name

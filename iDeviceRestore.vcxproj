@@ -37,6 +37,7 @@
     <ClInclude Include="src\limera1n.h" />
     <ClInclude Include="src\limera1n_payload.h" />
     <ClInclude Include="src\locking.h" />
+    <ClInclude Include="src\log.h" />
     <ClInclude Include="src\mbn.h" />
     <ClInclude Include="src\normal.h" />
     <ClInclude Include="src\recovery.h" />
@@ -58,6 +59,7 @@
     <ClCompile Include="src\ipsw.c" />
     <ClCompile Include="src\limera1n.c" />
     <ClCompile Include="src\locking.c" />
+    <ClCompile Include="src\log.c" />
     <ClCompile Include="src\mbn.c" />
     <ClCompile Include="src\normal.c" />
     <ClCompile Include="src\recovery.c" />

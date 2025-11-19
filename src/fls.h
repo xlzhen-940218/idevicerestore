@@ -75,7 +75,7 @@ typedef struct {
 	unsigned int max_elements;
 	fls_element** elements;
 	const fls_0c_element* c_element;
-	void* data;
+	uint8_t* data;
 	size_t size;
 } fls_file;
 

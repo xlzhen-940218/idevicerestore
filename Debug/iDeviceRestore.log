@@ -1,6 +1,37 @@
-﻿  common.c
-C:\Users\xiong\source\repos\iDeviceRestore\iDeviceRestore\src\common.c(228,14): warning C4244: “=”: 从“__int64”转换到“size_t”，可能丢失数据
-C:\Users\xiong\source\repos\iDeviceRestore\iDeviceRestore\src\common.c(284,8): warning C4244: “函数”: 从“time_t”转换到“unsigned int”，可能丢失数据
-C:\Users\xiong\source\repos\iDeviceRestore\iDeviceRestore\src\common.c(531,22): warning C4133: “函数”: 从“const char *”到“LPCWSTR”的类型不兼容
-C:\Users\xiong\source\repos\iDeviceRestore\iDeviceRestore\src\common.c(531,42): warning C4133: “函数”: 从“char *”到“LPWSTR”的类型不兼容
-  iDeviceRestore.vcxproj -> C:\Users\xiong\source\repos\iDeviceRestore\Debug\iDeviceRestore.exe
+﻿  download.c
+C:\Users\xiong\source\repos\iDeviceRestore\iDeviceRestore\src\download.c(72,11): warning C4090: “函数”: 不同的“const”限定符
+  limera1n.c
+  recovery.c
+  restore.c
+C:\Users\xiong\source\repos\iDeviceRestore\x86-include-libs\include\libimobiledevice\lockdown.h(1,1): warning C4819: 该文件包含不能在当前代码页(936)中表示的字符。请将该文件保存为 Unicode 格式以防止数据丢失
+  (编译源文件“src/restore.c”)
+  
+C:\Users\xiong\source\repos\iDeviceRestore\iDeviceRestore\src\restore.c(676,23): warning C4244: “初始化”: 从“uint64_t”转换到“uint16_t”，可能丢失数据
+C:\Users\xiong\source\repos\iDeviceRestore\iDeviceRestore\src\restore.c(2025,47): warning C4244: “函数”: 从“zip_uint64_t”转换到“size_t”，可能丢失数据
+C:\Users\xiong\source\repos\iDeviceRestore\iDeviceRestore\src\restore.c(2041,34): warning C4244: “函数”: 从“zip_uint64_t”转换到“size_t”，可能丢失数据
+C:\Users\xiong\source\repos\iDeviceRestore\iDeviceRestore\src\restore.c(2062,36): warning C4244: “函数”: 从“uint64_t”转换到“size_t”，可能丢失数据
+C:\Users\xiong\source\repos\iDeviceRestore\iDeviceRestore\src\restore.c(2067,30): warning C4244: “函数”: 从“uint64_t”转换到“size_t”，可能丢失数据
+C:\Users\xiong\source\repos\iDeviceRestore\iDeviceRestore\src\restore.c(2071,43): warning C4244: “函数”: 从“zip_uint64_t”转换到“size_t”，可能丢失数据
+C:\Users\xiong\source\repos\iDeviceRestore\iDeviceRestore\src\restore.c(2078,37): warning C4244: “函数”: 从“zip_uint64_t”转换到“size_t”，可能丢失数据
+C:\Users\xiong\source\repos\iDeviceRestore\iDeviceRestore\src\restore.c(2164,47): warning C4244: “函数”: 从“zip_uint64_t”转换到“size_t”，可能丢失数据
+C:\Users\xiong\source\repos\iDeviceRestore\iDeviceRestore\src\restore.c(2179,33): warning C4244: “函数”: 从“zip_uint64_t”转换到“size_t”，可能丢失数据
+C:\Users\xiong\source\repos\iDeviceRestore\iDeviceRestore\src\restore.c(2200,35): warning C4244: “函数”: 从“uint64_t”转换到“size_t”，可能丢失数据
+C:\Users\xiong\source\repos\iDeviceRestore\iDeviceRestore\src\restore.c(2205,29): warning C4244: “函数”: 从“uint64_t”转换到“size_t”，可能丢失数据
+C:\Users\xiong\source\repos\iDeviceRestore\iDeviceRestore\src\restore.c(2398,107): warning C4244: “函数”: 从“uint64_t”转换到“uint32_t”，可能丢失数据
+C:\Users\xiong\source\repos\iDeviceRestore\iDeviceRestore\src\restore.c(2971,4): warning C4013: “error”未定义；假设外部返回 int
+C:\Users\xiong\source\repos\iDeviceRestore\iDeviceRestore\src\restore.c(4029,27): warning C4244: “函数”: 从“__time64_t”转换到“int”，可能丢失数据
+C:\Users\xiong\source\repos\iDeviceRestore\iDeviceRestore\src\restore.c(4032,31): warning C4244: “函数”: 从“__int64”转换到“int”，可能丢失数据
+C:\Users\xiong\source\repos\iDeviceRestore\iDeviceRestore\src\restore.c(4051,62): warning C4244: “函数”: 从“__int64”转换到“uint32_t”，可能丢失数据
+C:\Users\xiong\source\repos\iDeviceRestore\iDeviceRestore\src\restore.c(4134,45): warning C4113: “int (__cdecl *)(void *,ipsw_archive_t,const char *,_stat64 *)”和“ipsw_list_cb”的参数列表不同
+C:\Users\xiong\source\repos\iDeviceRestore\iDeviceRestore\src\restore.c(4418,79): warning C4244: “函数”: 从“int64_t”转换到“size_t”，可能丢失数据
+C:\Users\xiong\source\repos\iDeviceRestore\iDeviceRestore\src\restore.c(4429,46): warning C4244: “函数”: 从“int64_t”转换到“size_t”，可能丢失数据
+C:\Users\xiong\source\repos\iDeviceRestore\iDeviceRestore\src\restore.c(4417,28): warning C4244: “初始化”: 从“int64_t”转换到“int”，可能丢失数据
+C:\Users\xiong\source\repos\iDeviceRestore\iDeviceRestore\src\restore.c(5213,46): warning C4244: “=”: 从“double”转换到“uint64_t”，可能丢失数据
+C:\Users\xiong\source\repos\iDeviceRestore\iDeviceRestore\src\restore.c(5214,46): warning C4244: “=”: 从“double”转换到“uint64_t”，可能丢失数据
+  正在生成代码...
+C:\Users\xiong\source\repos\iDeviceRestore\iDeviceRestore\src\restore.c(3006,1): warning C4715: “restore_get_yonkers_firmware_data”: 不是所有的控件路径都返回值
+common.obj : error LNK2019: 无法解析的外部符号 _dirname，函数 _mkdir_with_parents 中引用了该符号
+ftab.obj : error LNK2019: 无法解析的外部符号 _idevicerestore_free，函数 _ftab_free 中引用了该符号
+log.obj : error LNK2019: 无法解析的外部符号 _strcasecmp，函数 _logger_set_logfile 中引用了该符号
+restore.obj : error LNK2019: 无法解析的外部符号 _error，函数 _restore_get_yonkers_firmware_data 中引用了该符号
+C:\Users\xiong\source\repos\iDeviceRestore\Debug\iDeviceRestore.exe : fatal error LNK1120: 4 个无法解析的外部命令

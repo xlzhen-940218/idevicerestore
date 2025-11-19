@@ -81,6 +81,9 @@
     <ClInclude Include="src\getopt.h">
       <Filter>头文件</Filter>
     </ClInclude>
+    <ClInclude Include="src\log.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\ace3.c">
@@ -138,6 +141,9 @@
       <Filter>源文件</Filter>
     </ClCompile>
     <ClCompile Include="src\getopt.c">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="src\log.c">
       <Filter>源文件</Filter>
     </ClCompile>
   </ItemGroup>

@@ -1,4 +1,4 @@
-/*
+﻿/*
  * ace3.c
  * Functions to handle Ace3/uarp firmware format
  *
@@ -78,7 +78,7 @@ static int uarp_version_convert(uint32_t* version_data, uint32_t* version_out)
 	return 0;
 }
 
-int ace3_create_binary(const void* uarp_fw, size_t uarp_size, uint64_t bdid, unsigned int prev, plist_t tss, void** bin_out, size_t* bin_size)
+int ace3_create_binary(const uint8_t* uarp_fw, size_t uarp_size, uint64_t bdid, unsigned int prev, plist_t tss, uint8_t** bin_out, size_t* bin_size)
 {
 	struct ace3bin_header {
 		uint32_t magic;        // 0xACE00003

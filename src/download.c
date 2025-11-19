@@ -24,7 +24,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <curl/curl.h>
-
+//#include "log.h"
 #include "download.h"
 #include "common.h"
 
@@ -32,6 +32,7 @@ typedef struct {
 	int length;
 	char* content;
 } curl_response;
+
 
 static size_t download_write_buffer_callback(char* data, size_t size, size_t nmemb, curl_response* response) {
 	size_t total = size * nmemb;

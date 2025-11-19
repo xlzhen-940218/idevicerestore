@@ -27,10 +27,8 @@
 #include "ftab.h"
 #include "common.h"
 #include "endianness.h"
-static void idevicerestore_free(void* buffer)
-{
 
-int ftab_parse(const void *data, size_t data_size, ftab_t *ftab, uint32_t *tag)
+int ftab_parse(const uint8_t *data, size_t data_size, ftab_t *ftab, uint32_t *tag)
 {
 	if (!data || !data_size || !ftab) {
 		return -1;

@@ -25,8 +25,6 @@
 #include <string.h>
 #include "mbn.h"
 #include "common.h"
-static void idevicerestore_free(void* buffer)
-{
 
 #define MBN_V1_MAGIC "\x0A\x00\x00\x00"
 #define MBN_V1_MAGIC_SIZE 4
@@ -180,8 +178,8 @@ typedef struct
 static int mbn_is_valid_elf(const uint8_t* e_ident, size_t size)
 {
 	return size >= EI_NIDENT && e_ident[EI_MAG0] == ELFMAG0 &&
-	       e_ident[EI_MAG1] == ELFMAG1 && e_ident[EI_MAG2] == ELFMAG2 &&
-	       e_ident[EI_MAG3] == ELFMAG3 && e_ident[EI_CLASS] != ELFCLASSNONE;
+		e_ident[EI_MAG1] == ELFMAG1 && e_ident[EI_MAG2] == ELFMAG2 &&
+		e_ident[EI_MAG3] == ELFMAG3 && e_ident[EI_CLASS] != ELFCLASSNONE;
 }
 
 static int mbn_is_64bit_elf(const uint8_t* e_ident)
@@ -189,7 +187,7 @@ static int mbn_is_64bit_elf(const uint8_t* e_ident)
 	return e_ident[EI_CLASS] == ELFCLASS64;
 }
 
-void* mbn_stitch(const void* data, size_t data_size, const void* blob, size_t blob_size)
+void* mbn_stitch(const uint8_t* data, size_t data_size, const void* blob, size_t blob_size)
 {
 	if (!data) {
 		logger(LL_ERROR, "%s: data is NULL\n", __func__);
@@ -215,13 +213,16 @@ void* mbn_stitch(const void* data, size_t data_size, const void* blob, size_t bl
 	if (data_size > MBN_V2_MAGIC_SIZE && memcmp(data, MBN_V2_MAGIC, MBN_V2_MAGIC_SIZE) == 0) {
 		parsed_size = ((mbn_header_v2*)data)->data_size + sizeof(mbn_header_v2);
 		logger(LL_DEBUG, "%s: encountered MBN v2 image, parsed_size = 0x%zx\n", __func__, parsed_size);
-	} else if (data_size > MBN_V1_MAGIC_SIZE && memcmp(data, MBN_V1_MAGIC, MBN_V1_MAGIC_SIZE) == 0) {
+	}
+	else if (data_size > MBN_V1_MAGIC_SIZE && memcmp(data, MBN_V1_MAGIC, MBN_V1_MAGIC_SIZE) == 0) {
 		parsed_size = ((mbn_header_v1*)data)->data_size + sizeof(mbn_header_v1);
 		logger(LL_DEBUG, "%s: encountered MBN v1 image, parsed_size = 0x%zx\n", __func__, parsed_size);
-	} else if (data_size > MBN_BIN_MAGIC_SIZE+MBN_BIN_MAGIC_OFFSET && memcmp((uint8_t*)data+MBN_BIN_MAGIC_OFFSET, (uint8_t*)MBN_BIN_MAGIC, MBN_BIN_MAGIC_SIZE) == 0) {
+	}
+	else if (data_size > MBN_BIN_MAGIC_SIZE + MBN_BIN_MAGIC_OFFSET && memcmp((uint8_t*)data + MBN_BIN_MAGIC_OFFSET, (uint8_t*)MBN_BIN_MAGIC, MBN_BIN_MAGIC_SIZE) == 0) {
 		parsed_size = ((mbn_bin_header*)data)->total_size;
 		logger(LL_DEBUG, "%s: encountered MBN BIN image, parsed_size = 0x%zx\n", __func__, parsed_size);
-	} else if (mbn_is_valid_elf(data, data_size)) {
+	}
+	else if (mbn_is_valid_elf(data, data_size)) {
 		if (mbn_is_64bit_elf(data)) {
 			const elf64_header* ehdr = data;
 			const elf64_pheader* phdr = data + ehdr->e_phoff;
@@ -238,7 +239,8 @@ void* mbn_stitch(const void* data, size_t data_size, const void* blob, size_t bl
 				}
 			}
 			parsed_size = last_off + phdr[last_index].p_filesz;
-		} else {
+		}
+		else {
 			const elf32_header* ehdr = data;
 			const elf32_pheader* phdr = data + ehdr->e_phoff;
 			if (ehdr->e_phnum == 0) {
@@ -256,7 +258,8 @@ void* mbn_stitch(const void* data, size_t data_size, const void* blob, size_t bl
 			parsed_size = last_off + phdr[last_index].p_filesz;
 		}
 		logger(LL_DEBUG, "%s: encountered ELF image, parsed_size = 0x%zx\n", __func__, parsed_size);
-	} else {
+	}
+	else {
 		logger(LL_WARNING, "Unknown file format passed to %s\n", __func__);
 	}
 	if (parsed_size != data_size) {
@@ -270,7 +273,7 @@ void* mbn_stitch(const void* data, size_t data_size, const void* blob, size_t bl
 	}
 
 	unsigned char* buf = malloc(data_size);
-	if (buf == NULL)	{
+	if (buf == NULL) {
 		logger(LL_ERROR, "out of memory\n");
 		return NULL;
 	}
@@ -287,10 +290,10 @@ void* mbn_stitch(const void* data, size_t data_size, const void* blob, size_t bl
 static int mbn_v7_header_sizes_valid(const mbn_v7_header* header, size_t size)
 {
 	return (sizeof(*header) + header->common_metadata_size +
-	       header->qti_metadata_size + header->oem_metadata_size +
-	       header->hash_table_size + header->qti_signature_size +
-	       header->qti_certificate_chain_size + header->oem_signature_size +
-	       header->oem_certificate_chain_size) <= size;
+		header->qti_metadata_size + header->oem_metadata_size +
+		header->hash_table_size + header->qti_signature_size +
+		header->qti_certificate_chain_size + header->oem_signature_size +
+		header->oem_certificate_chain_size) <= size;
 }
 
 // 0xE0 == sizeof(mav25_authority_meta_field_t), 0x68 ==
@@ -298,9 +301,9 @@ static int mbn_v7_header_sizes_valid(const mbn_v7_header* header, size_t size)
 static int mbn_v7_header_sizes_expected(const mbn_v7_header* header)
 {
 	return (header->qti_metadata_size == 0 || header->qti_metadata_size == 0xE0) &&
-	       (header->oem_metadata_size == 0 || header->oem_metadata_size == 0xE0) &&
-	       (header->oem_signature_size == 0 || header->oem_signature_size == 0x68) &&
-	       (header->oem_certificate_chain_size == 0 || header->oem_certificate_chain_size == 0xD20);
+		(header->oem_metadata_size == 0 || header->oem_metadata_size == 0xE0) &&
+		(header->oem_signature_size == 0 || header->oem_signature_size == 0x68) &&
+		(header->oem_certificate_chain_size == 0 || header->oem_certificate_chain_size == 0xD20);
 }
 
 static void mbn_v7_log_header(const mbn_v7_header* header, const char* func, const char* prefix)
@@ -324,7 +327,7 @@ static void mbn_v7_log_header(const mbn_v7_header* header, const char* func, con
 	);
 }
 
-void* mbn_mav25_stitch(const void* data, size_t data_size, const void* blob, size_t blob_size)
+void* mbn_mav25_stitch(const uint8_t* data, size_t data_size, const uint8_t* blob, size_t blob_size)
 {
 	if (!data) {
 		logger(LL_ERROR, "%s: data is NULL\n", __func__);
@@ -383,9 +386,10 @@ void* mbn_mav25_stitch(const void* data, size_t data_size, const void* blob, siz
 			logger(LL_ERROR, "%s: Last ELF program section is out of bounds\n", __func__);
 			return NULL;
 		}
-		sect_off = phdr[ehdr->e_phnum-1].p_offset;
-		sect_size = phdr[ehdr->e_phnum-1].p_filesz;
-	} else {
+		sect_off = phdr[ehdr->e_phnum - 1].p_offset;
+		sect_size = phdr[ehdr->e_phnum - 1].p_filesz;
+	}
+	else {
 		const elf32_header* ehdr = data;
 		const elf32_pheader* phdr = data + ehdr->e_phoff;
 		if (ehdr->e_phnum == 0) {
@@ -396,8 +400,8 @@ void* mbn_mav25_stitch(const void* data, size_t data_size, const void* blob, siz
 			logger(LL_ERROR, "%s: Last ELF program section is out of bounds\n", __func__);
 			return NULL;
 		}
-		sect_off = phdr[ehdr->e_phnum-1].p_offset;
-		sect_size = phdr[ehdr->e_phnum-1].p_filesz;
+		sect_off = phdr[ehdr->e_phnum - 1].p_offset;
+		sect_size = phdr[ehdr->e_phnum - 1].p_filesz;
 	}
 
 	if (sect_off == 0) {
@@ -467,7 +471,7 @@ void* mbn_mav25_stitch(const void* data, size_t data_size, const void* blob, siz
 	}
 
 	unsigned char* buf = malloc(data_size);
-	if (buf == NULL)	{
+	if (buf == NULL) {
 		logger(LL_ERROR, "out of memory\n");
 		return NULL;
 	}

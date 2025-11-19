@@ -131,6 +131,7 @@ static int restore_finished = 0;
 
 static int restore_device_connected = 0;
 
+
 static void idevicerestore_free(void* buffer)
 {
 
@@ -2777,9 +2778,9 @@ static plist_t restore_get_savage_firmware_data(struct idevicerestore_client_t* 
 {
 	char *comp_name = NULL;
 	char *comp_path = NULL;
-	void* component_data = NULL;
+	uint8_t* component_data = NULL;
 	size_t component_size = 0;
-	void* component_data_tmp = NULL;
+	uint8_t* component_data_tmp = NULL;
 	plist_t parameters = NULL;
 	plist_t request = NULL;
 	plist_t response = NULL;
@@ -2886,8 +2887,8 @@ static plist_t restore_get_savage_firmware_data(struct idevicerestore_client_t* 
 
 static plist_t restore_get_yonkers_firmware_data(struct idevicerestore_client_t* client, plist_t p_info, plist_t arguments)
 {
-	char *comp_name = NULL;
-	char *comp_path = NULL;
+	char* comp_name = NULL;
+	char* comp_path = NULL;
 	void* component_data = NULL;
 	size_t component_size = 0;
 	plist_t parameters = NULL;
@@ -2944,7 +2945,8 @@ static plist_t restore_get_yonkers_firmware_data(struct idevicerestore_client_t*
 
 	if (plist_dict_get_item(response, "Yonkers,Ticket")) {
 		logger(LL_INFO, "Received Yonkers ticket\n");
-	} else {
+	}
+	else {
 		logger(LL_ERROR, "No 'Yonkers,Ticket' in TSS response, this might not work\n");
 	}
 
@@ -2971,35 +2973,36 @@ static plist_t restore_get_yonkers_firmware_data(struct idevicerestore_client_t*
 			return NULL;
 		}
 
-	if (build_identity_get_component_path(client->restore->build_identity, comp_name, &comp_path) < 0) {
-		plist_free(response);
-		logger(LL_ERROR, "Unable to get path for '%s' component\n", comp_name);
+		if (build_identity_get_component_path(client->restore->build_identity, comp_name, &comp_path) < 0) {
+			plist_free(response);
+			logger(LL_ERROR, "Unable to get path for '%s' component\n", comp_name);
+			free(comp_name);
+			return NULL;
+		}
+
+		/* now get actual component data */
+		ret = extract_component(client->ipsw, comp_path, &component_data, &component_size);
+		free(comp_path);
+		comp_path = NULL;
+		if (ret < 0) {
+			plist_free(response);
+			logger(LL_ERROR, "Unable to extract '%s' component\n", comp_name);
+			free(comp_name);
+			return NULL;
+		}
 		free(comp_name);
-		return NULL;
+		comp_name = NULL;
+
+		plist_t firmware_data = plist_new_dict();
+		plist_dict_set_item(firmware_data, "YonkersFirmware", plist_new_data((char*)component_data, component_size));
+		plist_dict_set_item(response, "FirmwareData", firmware_data);
+
+		free(component_data);
+		component_data = NULL;
+		component_size = 0;
+
+		return response;
 	}
-
-	/* now get actual component data */
-	ret = extract_component(client->ipsw, comp_path, &component_data, &component_size);
-	free(comp_path);
-	comp_path = NULL;
-	if (ret < 0) {
-		plist_free(response);
-		logger(LL_ERROR, "Unable to extract '%s' component\n", comp_name);
-		free(comp_name);
-		return NULL;
-	}
-	free(comp_name);
-	comp_name = NULL;
-
-	plist_t firmware_data = plist_new_dict();
-	plist_dict_set_item(firmware_data, "YonkersFirmware", plist_new_data((char*)component_data, component_size));
-	plist_dict_set_item(response, "FirmwareData", firmware_data);
-
-	free(component_data);
-	component_data = NULL;
-	component_size = 0;
-
-	return response;
 }
 
 static plist_t restore_get_rose_firmware_data(struct idevicerestore_client_t* client, plist_t p_info, plist_t arguments)

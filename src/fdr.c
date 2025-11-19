@@ -539,7 +539,7 @@ static int fdr_handle_proxy_cmd(fdr_client_t fdr)
 		uint16_t *p = (uint16_t *)&buf[bytes - 2];
 		port = be16toh(*p);
 		buf[bytes - 2] = '\0';
-		host = strdup(&buf[3]);
+		host = _strdup(&buf[3]);
 		logger(LL_DEBUG, "FDR %p Proxy connect request to %s:%u\n", fdr, host, port);
 	}
 

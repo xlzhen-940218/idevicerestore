@@ -617,13 +617,8 @@ int normal_handle_commit_stashbag(struct idevicerestore_client_t* client, plist_
 			if (node) {
 				plist_get_string_val(node, &strval);
 			}
-<<<<<<< Updated upstream
 			logger(LL_ERROR, "Could not commit stashbag: %s\n", (strval) ? strval : "(Unknown error)");
 			free(strval);
-=======
-			error("ERROR: Could not commit stashbag: %s\n", (strval) ? strval : "(Unknown error)");
-			idevicerestore_free(strval);
->>>>>>> Stashed changes
 		} else if (plist_dict_get_bool(pl, "StashbagCommitComplete")) {
 			logger(LL_INFO, "Stashbag committed!\n");
 			result = 0;

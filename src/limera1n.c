@@ -1,4 +1,4 @@
-/*
+﻿/*
  * limera1n.c
  * Helper code for limera1n exploit based on discovery by geohot
  *
@@ -29,6 +29,7 @@
 #include "common.h"
 #include "limera1n.h"
 #include "limera1n_payload.h"
+
 
 int limera1n_is_supported(struct irecv_device *device)
 {

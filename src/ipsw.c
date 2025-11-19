@@ -413,6 +413,18 @@ int ipsw_get_file_size(ipsw_archive_t ipsw, const char* infile, uint64_t* size)
 	return 0;
 }
 
+void my_get_zip_error(zip_file_t* file, int* ze, int* se) {
+#if LIBZIP_VERSION_MAJOR >= 1
+	// 新版 libzip 1.0+ 写法
+	zip_error_t* error = zip_file_get_error(file);
+	if (ze) *ze = zip_error_code_zip(error);
+	if (se) *se = zip_error_code_system(error);
+#else
+	// 旧版 libzip 0.x 写法
+	zip_file_error_get(file, ze, se);
+#endif
+}
+
 int ipsw_extract_to_file_with_progress(ipsw_archive_t ipsw, const char* infile, const char* outfile, int print_progress)
 {
 	int ret = 0;
@@ -489,7 +501,7 @@ int ipsw_extract_to_file_with_progress(ipsw_archive_t ipsw, const char* infile, 
 			if (count < 0) {
 				int zep = 0;
 				int sep = 0;
-				zip_file_error_get(zfile, &zep, &sep);
+				my_get_zip_error(zfile, &zep, &sep);
 				logger(LL_ERROR, "zip_fread: %s %d %d\n", infile, zep, sep);
 				ret = -1;
 				break;
@@ -648,6 +660,8 @@ int ipsw_file_exists(ipsw_archive_t ipsw, const char* infile)
 	return 1;
 }
 
+
+
 int ipsw_extract_to_memory(ipsw_archive_t ipsw, const char* infile, void** pbuffer, size_t* psize)
 {
 	size_t size = 0;
@@ -714,7 +728,7 @@ int ipsw_extract_to_memory(ipsw_archive_t ipsw, const char* infile, void** pbuff
 		if (zr < 0) {
 			int zep = 0;
 			int sep = 0;
-			zip_file_error_get(zfile, &zep, &sep);
+			my_get_zip_error(zfile, &zep, &sep);
 			logger(LL_ERROR, "zip_fread: %s %d %d\n", infile, zep, sep);
 			free(buffer);
 			return -1;

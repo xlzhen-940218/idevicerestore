@@ -1,4 +1,4 @@
-/*
+﻿/*
  * common.c
  * Misc functions used in idevicerestore
  *
@@ -353,7 +353,7 @@ void register_progress(uint32_t tag, const char* label)
 	if (found) {
 		if (strcmp(found->label, label) != 0) {
 			free(found->label);
-			found->label = strdup(label);
+			found->label = _strdup(label);
 			if (update_progress_func) {
 				update_progress_func((struct progress_info_entry**)(&progress_info)->list, progress_info.capacity);
 			} else {
@@ -369,7 +369,7 @@ void register_progress(uint32_t tag, const char* label)
 		exit(1);
 	}
 	newinfo->tag = tag;
-	newinfo->label = strdup(label);
+	newinfo->label = _strdup(label);
 	newinfo->progress = 0;
 	collection_add(&progress_info, newinfo);
 	if (update_progress_func) {
@@ -474,7 +474,7 @@ char *generate_guid(void)
 int mkdir_with_parents(const char *dir, int mode)
 {
 	if (!dir) return -1;
-	if (__mkdir(dir, mode) == 0) {
+	if (_mkdir(dir) == 0) {
 		return 0;
 	} else {
 		if (errno == EEXIST) {
@@ -588,7 +588,7 @@ int mkstemp(char *tmpl)
 		XXXXXX[5] = letters[v % 62];
 
 #ifdef WIN32
-		fd = open (tmpl, O_RDWR | O_CREAT | O_EXCL, _S_IREAD | _S_IWRITE);
+		fd = _open (tmpl, O_RDWR | O_CREAT | O_EXCL, _S_IREAD | _S_IWRITE);
 #else
 		fd = open (tmpl, O_RDWR | O_CREAT | O_EXCL, S_IRUSR | S_IWUSR);
 #endif
@@ -607,10 +607,31 @@ int mkstemp(char *tmpl)
 }
 #endif
 
+// 必须包含 Windows 的 io.h 以使用 access/_access
+#ifdef _MSC_VER
+#include <io.h> 
+#include <process.h> // 有些环境定义在这里
+
+// MSVC 建议使用 _access 替代 access，但也兼容 access
+// 如果编译器报错 access deprecated，可以使用 #define access _access
+
+// 核心修复：Windows 没有 X_OK，定义为 0 以忽略该检查
+#ifndef X_OK
+#define X_OK 0
+#endif
+
+// 确保 W_OK 存在（通常 io.h 里有，值为 2）
+#ifndef W_OK
+#define W_OK 2
+#endif
+#else
+#include <unistd.h> // Linux/Unix 标准头文件
+#endif
+
 char *get_temp_filename(const char *prefix)
 {
 	char *result = NULL;
-	char *tmpdir;
+	char *tmpdir = NULL;
 	size_t lt;
 	size_t lp;
 	const char *TMPVARS[] = { "TMPDIR", "TMP", "TEMP", "TEMPDIR", NULL };
@@ -658,7 +679,7 @@ char *get_temp_filename(const char *prefix)
 		free(result);
 		result = NULL;
 	}
-	close(fd);
+	_close(fd);
 	return result;
 }
 

@@ -24,7 +24,7 @@
 
 #include <stdint.h>
 
-void* mbn_stitch(const void* data, size_t data_size, const void* blob, size_t blob_size);
-void* mbn_mav25_stitch(const void* data, size_t data_size, const void* blob, size_t blob_size);
+void* mbn_stitch(const uint8_t* data, size_t data_size, const void* blob, size_t blob_size);
+void* mbn_mav25_stitch(const uint8_t* data, size_t data_size, const uint8_t* blob, size_t blob_size);
 
 #endif

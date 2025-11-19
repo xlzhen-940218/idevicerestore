@@ -35,6 +35,7 @@
 #include "img3.h"
 #include "restore.h"
 #include "recovery.h"
+
 static void idevicerestore_free(void* buffer)
 {
 
@@ -96,7 +97,7 @@ int recovery_client_new(struct idevicerestore_client_t* client)
 	if (client->srnm == NULL) {
 		const struct irecv_device_info *device_info = irecv_get_device_info(recovery);
 		if (device_info && device_info->srnm) {
-			client->srnm = strdup(device_info->srnm);
+			client->srnm = _strdup(device_info->srnm);
 			logger(LL_INFO, "INFO: device serial number is %s\n", client->srnm);
 		}
 	}
@@ -128,9 +129,9 @@ int recovery_set_autoboot(struct idevicerestore_client_t* client, int enable)
 int recovery_enter_restore(struct idevicerestore_client_t* client, plist_t build_identity)
 {
     if (client->macos_variant) {
-        client->restore_boot_args = strdup("rd=md0 nand-enable-reformat=1 -progress -restore");
+        client->restore_boot_args = _strdup("rd=md0 nand-enable-reformat=1 -progress -restore");
     } else if (client->build_major >= 8) {
-        client->restore_boot_args = strdup("rd=md0 nand-enable-reformat=1 -progress");
+        client->restore_boot_args = _strdup("rd=md0 nand-enable-reformat=1 -progress");
     }
 
 	/* upload data to make device boot restore mode */

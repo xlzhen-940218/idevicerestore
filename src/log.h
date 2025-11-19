@@ -1,4 +1,4 @@
-/*
+﻿/*
  * log.h
  *
  * Copyright (c) 2024 Nikias Bassen. All Rights Reserved.
@@ -22,6 +22,7 @@
 #define LOG_H
 
 #include <plist/plist.h>
+#include <stdio.h> // 或者 #include <sal.h>
 
 enum loglevel {
 	LL_ERROR = 0,
@@ -36,7 +37,8 @@ extern enum loglevel log_level;
 
 typedef void (*logger_print_func)(enum loglevel level, const char*, va_list);
 
-void logger(enum loglevel level, const char *fmt, ...) __attribute__ ((format (printf, 2, 3)));
+//void logger(enum loglevel level, const char *fmt, ...) __attribute__ ((format (printf, 2, 3)));
+void logger(enum loglevel level, _Printf_format_string_ const char* fmt, ...);
 int logger_set_logfile(const char* path);
 void logger_set_print_func(logger_print_func func);
 void logger_dump_hex(enum loglevel level, const void* buf, size_t len);
