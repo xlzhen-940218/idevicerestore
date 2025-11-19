@@ -2968,7 +2968,7 @@ static plist_t restore_get_yonkers_firmware_data(struct idevicerestore_client_t*
 		|| strncmp(&v19[v20 - 7], ",Ticket", 7u))
 	{
 		if (build_identity_get_component_path(client->restore->build_identity, comp_name, &comp_path) < 0) {
-			error("ERROR: Unable to get path for '%s' component\n", comp_name);
+			logger(LL_ERROR, "ERROR: Unable to get path for '%s' component\n", comp_name);
 			idevicerestore_free(comp_name);
 			return NULL;
 		}

@@ -188,10 +188,10 @@ int ftab_free(ftab_t ftab)
 	if (!ftab) return -1;
 	uint32_t i = 0;
 	for (i = 0; i < ftab->header.num_entries; i++) {
-		idevicerestore_free(ftab->storage[i]);
+		free(ftab->storage[i]);
 	}
-	idevicerestore_free(ftab->storage);
-	idevicerestore_free(ftab->entries);
-	idevicerestore_free(ftab);
+	free(ftab->storage);
+	free(ftab->entries);
+	free(ftab);
 	return 0;
 }

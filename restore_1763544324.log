@@ -1,0 +1,10 @@
+17:25:24.602    <Info> idevicerestore 1.0.0-267-ga499b62 (libirecovery 1.2.0-2-g7ce02c3, libtatsu 1.0.3)
+17:25:24.649    <Info> Found device in Normal mode
+17:25:24.798    <Info> ECID: 8746843014512
+17:25:24.798    <Info> Identified device as n53ap, iPhone6,2
+17:25:24.869    <Info> Device Product Version: 12.5.7
+17:25:24.869    <Info> Device Product Build: 16H81
+17:25:25.905    <Info> The following firmwares are currently being signed for iPhone6,2:
+17:25:25.906    <Info>   [1] 12.5.7 (build 16H81)
+17:25:58.705  <Notice> Selected firmware 12.5.7 (build 16H81)
+17:25:58.706    <Info> Downloading firmware (https://updates.cdn-apple.com/2023FCSWinter/fullrestores/032-14411/390C166E-349A-452E-ADFE-0CF3895F6070/iPhone_4.0_64bit_12.5.7_16H81_Restore.ipsw)

@@ -1,4 +1,4 @@
-/*
+﻿/*
  * log.c
  *
  * Copyright (c) 2024 Nikias Bassen. All Rights Reserved.
@@ -203,7 +203,14 @@ void logger_dump_plist(enum loglevel level, plist_t plist, int human_readable)
 	plist_write_to_stream(plist, stderr_enabled ? stderr : stdout, (human_readable) ? PLIST_FORMAT_PRINT : PLIST_FORMAT_XML, PLIST_OPT_NONE);
 	mutex_unlock(&log_mutex);
 }
-
+// --- 添加这段兼容代码 ---
+#ifdef _MSC_VER
+	// MSVC 下将 strcasecmp 映射为 _stricmp
+#define strcasecmp _stricmp
+// 通常 strncasecmp 也会一起报错，顺便一起定义：
+#define strncasecmp _strnicmp
+#endif
+// ----
 int logger_set_logfile(const char* path)
 {
 	if (!path || !strcasecmp(path, "NULL") || !strcasecmp(path, "NONE")) {
